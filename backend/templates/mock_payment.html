@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mock Payment</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #0a0a0a;
+            color: #ffff00;
+            line-height: 1.4;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 255, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 85% 30%, rgba(255, 200, 0, 0.05) 0%, transparent 20%),
+                linear-gradient(45deg, #0a0a0a 25%, #0f0f0f 25%, #0f0f0f 50%, #0a0a0a 50%, #0a0a0a 75%, #0f0f0f 75%, #0f0f0f);
+            background-size: 4px 4px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(15, 15, 15, 0.95);
+            border-radius: 0;
+            padding: 20px;
+            border: 2px solid #ffff00;
+            box-shadow: 
+                0 0 20px rgba(255, 255, 0, 0.3),
+                inset 0 0 20px rgba(255, 255, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #ffff00 20%, 
+                #ffff00 80%, 
+                transparent 100%);
+            animation: scanline 2s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0 30px;
+            border-bottom: 2px solid #ffff00;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '■ ■ ■';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffff00;
+            letter-spacing: 5px;
+            font-size: 12px;
+        }
+
+        .header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 18px;
+            font-weight: normal;
+            color: #ffff00;
+            margin-bottom: 10px;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 0, 0.5),
+                0 0 20px rgba(255, 255, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            color: #ffff80;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 0;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: success-pulse 2s infinite;
+        }
+
+        @keyframes success-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.6); }
+        }
+
+        .success-message h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: #00ff00;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .success-message p {
+            color: #80ff80;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            font-weight: normal;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #333300, #666600);
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ffff00;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(45deg, #444400, #888800);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 5px 15px rgba(255, 255, 0, 0.3),
+                0 0 20px rgba(255, 255, 0, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 0, 0.2),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #003300, #006600);
+            color: #00ff00;
+            border-color: #00ff00;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(45deg, #004400, #008800);
+            box-shadow: 
+                0 5px 15px rgba(0, 255, 0, 0.3),
+                0 0 20px rgba(0, 255, 0, 0.1);
+        }
+
+        .payment-info {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid;
+            border-image: linear-gradient(45deg, #ffff00, #ff9900) 1;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .payment-info h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #ffff00;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .payment-info p {
+            color: #ffff80;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .transaction-id {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px;
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid #00ffff;
+            letter-spacing: 1px;
+        }
+
+        .terminal-display {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffff00;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: #00ff00;
+            line-height: 1.6;
+            position: relative;
+            min-height: 100px;
+            overflow: hidden;
+        }
+
+        .terminal-display::before {
+            content: '> ';
+            color: #ffff00;
+        }
+
+        .loading-bar {
+            height: 4px;
+            background: #333;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, #ffff00, #ff9900);
+            animation: loading 2s infinite ease-in-out;
+        }
+
+        @keyframes loading {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
+
+        .binary-fall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.1;
+        }
+
+        .binary-fall span {
+            position: absolute;
+            color: #ffff00;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>[ $ ] PAYMENT PROCESSING</h1>
+            <p>/// TRANSACTION SIMULATION</p>
+        </div>
+
+        <div class="transaction-id">
+            PAYMENT ID: {{ payment_id }}
+        </div>
+
+        <div class="terminal-display" id="terminal">
+            INITIALIZING PAYMENT SYSTEM...<br>
+            CONNECTING TO BANK SERVER...<br>
+            VERIFYING TRANSACTION DETAILS...<br>
+            > 
+        </div>
+
+        <div class="payment-info">
+            <h3>PAYMENT INFORMATION</h3>
+            <p>THIS IS A TEST PAYMENT SIMULATION PAGE.</p>
+            <p>IN PRODUCTION, REAL PAYMENT PROCESSING WOULD OCCUR VIA YOOKASSA.</p>
+            <p>STATUS: AWAITING CONFIRMATION</p>
+        </div>
+
+        <div class="loading-bar"></div>
+
+        <div class="success-message">
+            <h3>[ ✓ ] PAYMENT PROCESSED SUCCESSFULLY</h3>
+            <p>YOUR SUBSCRIPTION WILL BE ACTIVATED WITHIN MINUTES.</p>
+        </div>
+
+        <button class="btn btn-success" onclick="simulatePaymentSuccess()">CONFIRM PAYMENT</button>
+        <button class="btn" onclick="goBack()">CANCEL / BACK</button>
+    </div>
+
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+
+        tg.ready();
+        tg.expand();
+
+        // Set header color
+        tg.setHeaderColor("#000000");
+        tg.setBackgroundColor("#0a0a0a");
+
+        // Create binary rain effect
+        function createBinaryRain() {
+            const container = document.querySelector('.container');
+            const binaryFall = document.createElement('div');
+            binaryFall.className = 'binary-fall';
+            container.appendChild(binaryFall);
+
+            for (let i = 0; i < 20; i++) {
+                const binary = document.createElement('span');
+                binary.textContent = Math.random() > 0.5 ? '1' : '0';
+                binary.style.left = Math.random() * 100 + '%';
+                binary.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                binary.style.animationDelay = Math.random() * 5 + 's';
+                binaryFall.appendChild(binary);
+            }
+        }
+
+        // Terminal typewriter effect
+        function typeTerminal(text, speed = 50) {
+            const terminal = document.getElementById('terminal');
+            let i = 0;
+            
+            function type() {
+                if (i < text.length) {
+                    terminal.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            
+            // Clear existing content except initial lines
+            const lines = terminal.innerHTML.split('<br>');
+            terminal.innerHTML = lines.slice(0, 4).join('<br>') + '<br>> ';
+            setTimeout(type, 500);
+        }
+
+        function simulatePaymentSuccess() {
+            // Terminal simulation
+            typeTerminal('PROCESSING PAYMENT...\nVERIFYING CREDENTIALS...\nCONNECTING TO GATEWAY...\nTRANSACTION APPROVED...\nUPDATING DATABASE...\nSUBSCRIPTION ACTIVATED...', 30);
+            
+            setTimeout(() => {
+                const successMsg = document.querySelector('.success-message');
+                successMsg.style.animation = 'none';
+                successMsg.style.boxShadow = '0 0 30px rgba(0, 255, 0, 0.8)';
+                
+                alert("PAYMENT CONFIRMED!\n\nSUBSCRIPTION ACTIVATED.\nRETURNING TO MAIN MENU...");
+                
+                if (tg.WebApp) {
+                    setTimeout(() => tg.close(), 1000);
+                } else {
+                    setTimeout(() => window.close(), 1000);
+                }
+            }, 2000);
+        }
+
+        function goBack() {
+            typeTerminal('TRANSACTION CANCELLED BY USER...\nROLLING BACK CHANGES...\nRETURNING TO MAIN MENU...', 40);
+            setTimeout(() => window.history.back(), 1500);
+        }
+
+        // Initialize effects
+        document.addEventListener('DOMContentLoaded', function() {
+            createBinaryRain();
+            typeTerminal('SYSTEM READY. AWAITING USER INPUT...');
+            
+            // Simulate system activity
+            setInterval(() => {
+                const terminal = document.getElementById('terminal');
+                const lines = terminal.innerHTML.split('<br>');
+                if (lines.length > 15) {
+                    terminal.innerHTML = lines.slice(-15).join('<br>');
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статус оплаты - VPN</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .status-card {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .status-pending {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+        }
+        .status-success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+        .status-error {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        .btn-refresh {
+            background-color: #9b59b6;
+        }
+        .btn-refresh:hover {
+            background-color: #8e44ad;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Статус оплаты</h1>
+        
+        <div id="statusContent">
+            <!-- Status will be loaded dynamically -->
+        </div>
+        
+        <div id="actionButtons" style="display: none;">
+            <button id="refreshBtn" class="btn btn-refresh" onclick="refreshStatus()">
+                🔄 Обновить статус
+            </button>
+            <button id="backToPaymentBtn" class="btn" onclick="backToPayment()" style="display: none;">
+                💳 Вернуться к оплате
+            </button>
+            <button id="goToMainBtn" class="btn" onclick="goToMain()" style="display: none;">
+                🏠 В главное меню
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const paymentId = "{{ payment_id }}";
+        let statusInterval = null;
+        
+        // Function to load payment status
+        async function loadPaymentStatus() {
+            try {
+                const response = await fetch(`/api/payment/check/${paymentId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayStatus(data.payment_info);
+                } else {
+                    displayError("Ошибка получения статуса платежа");
+                }
+            } catch (error) {
+                console.error('Error fetching payment status:', error);
+                displayError("Ошибка соединения с сервером");
+            }
+        }
+        
+        // Display status based on payment info
+        function displayStatus(paymentInfo) {
+            const statusContent = document.getElementById('statusContent');
+            const actionButtons = document.getElementById('actionButtons');
+            const backToPaymentBtn = document.getElementById('backToPaymentBtn');
+            const goToMainBtn = document.getElementById('goToMainBtn');
+            
+            let statusClass = '';
+            let statusIcon = '';
+            let statusText = '';
+            let additionalInfo = '';
+            
+            switch (paymentInfo.status) {
+                case 'pending':
+                    statusClass = 'status-pending';
+                    statusIcon = '⏳';
+                    statusText = 'Платёж ожидает оплаты';
+                    additionalInfo = 'Пожалуйста, завершите оплату на странице Юкассы';
+                    backToPaymentBtn.style.display = 'block';
+                    break;
+                case 'waiting_for_capture':
+                    statusClass = 'status-pending';
+                    statusIcon = '⏳';
+                    statusText = 'Платёж авторизован, ожидается подтверждение';
+                    additionalInfo = 'Оплата прошла успешно, ожидается подтверждение';
+                    goToMainBtn.style.display = 'block';
+                    break;
+                case 'succeeded':
+                    statusClass = 'status-success';
+                    statusIcon = '✅';
+                    statusText = 'Платёж успешно завершён!';
+                    additionalInfo = 'Ваша подписка активирована. Спасибо за оплату!';
+                    goToMainBtn.style.display = 'block';
+                    break;
+                case 'canceled':
+                    statusClass = 'status-error';
+                    statusIcon = '❌';
+                    statusText = 'Платёж отменён';
+                    additionalInfo = 'Оплата была отменена. Вы можете повторить попытку.';
+                    backToPaymentBtn.style.display = 'block';
+                    break;
+                default:
+                    statusClass = 'status-error';
+                    statusIcon = '❓';
+                    statusText = `Статус платежа: ${paymentInfo.status}`;
+                    additionalInfo = 'Неизвестный статус платежа';
+                    backToPaymentBtn.style.display = 'block';
+            }
+            
+            statusContent.innerHTML = `
+                <div class="status-card ${statusClass}">
+                    <h2>${statusIcon} ${statusText}</h2>
+                    <div class="info-box">
+                        <p><strong>ID платежа:</strong> ${paymentInfo.id || 'N/A'}</p>
+                        <p><strong>Сумма:</strong> ${paymentInfo.amount || 'N/A'} ${paymentInfo.currency || 'RUB'}</p>
+                        <p><strong>Дата создания:</strong> ${paymentInfo.created_at || 'N/A'}</p>
+                    </div>
+                    <p>${additionalInfo}</p>
+                </div>
+            `;
+            
+            actionButtons.style.display = 'block';
+        }
+        
+        // Display error message
+        function displayError(message) {
+            const statusContent = document.getElementById('statusContent');
+            const actionButtons = document.getElementById('actionButtons');
+            
+            statusContent.innerHTML = `
+                <div class="status-card status-error">
+                    <h2>❌ Ошибка</h2>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            actionButtons.style.display = 'block';
+        }
+        
+        // Refresh status
+        function refreshStatus() {
+            loadPaymentStatus();
+        }
+        
+        // Back to payment
+        function backToPayment() {
+            window.location.href = `/payment-ios/${paymentId}`;
+        }
+        
+        // Go to main
+        function goToMain() {
+            // This would redirect to the main bot interface
+            // Since we're in a web app, we'll show a message
+            alert('Пожалуйста, вернитесь в Telegram бот для продолжения');
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPaymentStatus();
+            
+            // Set up automatic refresh every 10 seconds
+            statusInterval = setInterval(loadPaymentStatus, 10000);
+        });
+        
+        // Clean up interval when page is unloaded
+        window.addEventListener('beforeunload', function() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+        });
+    </script>
+</body>
+</html>

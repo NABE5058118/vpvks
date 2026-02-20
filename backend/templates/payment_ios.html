@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата VPN подписки - iOS</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .amount {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 25px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .step {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+        .step-number {
+            background-color: #2196f3;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+        .link-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .ios-warning {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ff9800;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Оплата VPN подписки</h1>
+        
+        <div class="amount">
+            Сумма: {{ amount }} {{ currency }}
+        </div>
+        
+        <div class="ios-warning">
+            <strong>Важно для пользователей iOS!</strong><br>
+            Для корректного открытия страницы оплаты следуйте инструкции ниже.
+        </div>
+        
+        <div class="instructions">
+            <h3>Шаги для оплаты:</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>Нажмите на кнопку "Открыть в Safari" ниже</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>Если кнопка не работает, скопируйте ссылку в буфер обмена</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Откройте Safari и вставьте ссылку в адресную строку</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="openInSafari()">
+            <span class="icon">📱</span> Открыть в Safari
+        </button>
+        
+        <div class="link-container">
+            <strong>Ссылка для оплаты:</strong><br>
+            <span id="payment-url">{{ payment_url }}</span>
+        </div>
+        
+        <button class="btn" onclick="copyLink()">
+            <span class="icon">📋</span> Копировать ссылку
+        </button>
+        
+        <button class="btn" style="background-color: #2ecc71;" onclick="checkStatus()">
+            <span class="icon">🔄</span> Проверить статус оплаты
+        </button>
+    </div>
+
+    <script>
+        const paymentUrl = "{{ payment_url }}";
+        
+        function openInSafari() {
+            // Try to open in Safari directly
+            window.location.href = paymentUrl;
+        }
+        
+        function copyLink() {
+            // Create temporary textarea to copy text
+            const textArea = document.createElement('textarea');
+            textArea.value = paymentUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            alert('Ссылка скопирована в буфер обмена! Откройте Safari и вставьте её в адресную строку.');
+        }
+        
+        function checkStatus() {
+            // Redirect to status check page
+            const paymentId = "{{ payment_id }}";
+            window.location.href = `/payment-status/${paymentId}`;
+        }
+        
+        // Auto-refresh status every 10 seconds after payment
+        setTimeout(function() {
+            checkStatus();
+        }, 10000); // Check status after 10 seconds
+        
+        // Additional iOS-specific detection and handling
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+            // On iOS, we already have specific instructions
+            console.log("iOS detected - showing iOS-specific instructions");
+        }
+    </script>
+</body>
+</html>

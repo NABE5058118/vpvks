@@ -1,0 +1,25 @@
+version: "3.3"
+
+services:
+  marzban:
+    image: gozargah/marzban:latest
+    restart: always
+    env_file:
+      - .env
+    network_mode: host
+    volumes:
+      - /var/lib/marzban:/var/lib/marzban
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - marzban-db
+
+  marzban-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /var/lib/marzban-db:/var/lib/postgresql/data
+    network_mode: host

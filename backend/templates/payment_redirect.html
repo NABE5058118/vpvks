@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата VPN подписки</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 20px 0;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .ios-instruction {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            border-radius: 5px;
+        }
+        .auto-redirect-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .countdown {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Оплата VPN подписки</h1>
+        <p>Для оплаты нажмите на кнопку ниже:</p>
+        
+        <div class="amount">Сумма: <span id="amountDisplay">{{ amount }} {{ currency }}</span></div>
+        
+        <button class="btn" onclick="proceedToPayment()">Перейти к оплате</button>
+        
+        <div class="auto-redirect-info">
+            <p>Если кнопка не работает, страница автоматически перенаправит вас через: <span id="countdown" class="countdown">10</span> секунд</p>
+        </div>
+        
+        <div class="ios-instruction">
+            <strong>Для пользователей iOS:</strong> Если кнопка не работает, нажмите и удерживайте её, затем выберите "Открыть в Safari".<br><br>
+            <strong>Альтернативный способ:</strong> Скопируйте ссылку в буфер обмена и откройте в Safari:<br>
+            <input type="text" id="paymentLink" value="{{ payment_url }}" readonly style="width: 100%; padding: 8px; margin-top: 10px;">
+            <button class="btn" onclick="copyLink()">Копировать ссылку</button>
+        </div>
+    </div>
+
+    <script>
+        const paymentUrl = "{{ payment_url }}";
+        let countdown = 10;
+        
+        function proceedToPayment() {
+            // Try to open in new window/tab
+            const newWindow = window.open(paymentUrl, '_blank');
+            
+            // If popup is blocked or window couldn't be opened
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                // Fallback: redirect current window
+                window.location.href = paymentUrl;
+            }
+        }
+        
+        function copyLink() {
+            const linkField = document.getElementById('paymentLink');
+            linkField.select();
+            document.execCommand('copy');
+            alert('Ссылка скопирована в буфер обмена!');
+        }
+        
+        // Auto redirect countdown
+        const countdownElement = document.getElementById('countdown');
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                // Try to redirect automatically
+                window.location.href = paymentUrl;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+services:
+  marzban:
+    image: gozargah/marzban:latest
+    container_name: marzban
+    restart: always
+    env_file:
+      - marzban.env               # отдельный env-файл для Marzban
+    network_mode: host
+    volumes:
+      - /var/lib/marzban:/var/lib/marzban
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      marzban-db:
+        condition: service_healthy
+
+  marzban-db:
+    image: postgres:15-alpine
+    container_name: marzban_postgres
+    restart: always
+    env_file:
+      - marzban.env               # тот же env-файл, что и для marzban
+    network_mode: host
+    volumes:
+      - /var/lib/marzban-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: vpn_postgres
+    restart: always
+    env_file:
+      - .env                      # основной env-файл для бота/бэкенда
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: ${PGDATA}
+    # Порт хоста не пробрасывается – только внутри bridge-сети
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vpn_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: vpn_pgbouncer
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      POOL_MODE: ${POOL_MODE}
+      MAX_CLIENT_CONN: ${MAX_CLIENT_CONN}
+      DEFAULT_POOL_SIZE: ${DEFAULT_POOL_SIZE}
+      ADMIN_USERS: ${ADMIN_USERS}
+      AUTH_TYPE: ${AUTH_TYPE}
+      IGNORE_STARTUP_PARAMETERS: ${IGNORE_STARTUP_PARAMETERS}
+    ports:
+      - "6432:5432"               # PgBouncer доступен на хосте через порт 6432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vpn_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vpn_backend
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT}
+      DATABASE_URL: ${DATABASE_URL}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
+      YOOKASSA_TEST_MODE: ${YOOKASSA_TEST_MODE}
+      YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      WG_SERVER_IP: ${WG_SERVER_IP}
+      WG_PORT: ${WG_PORT}
+      WG_DNS: ${WG_DNS}
+      WG_SERVER_PUBLIC_KEY: ${WG_SERVER_PUBLIC_KEY}
+      WG_CONFIG_DIR: ${WG_CONFIG_DIR}
+    ports:
+      - "8080:8080"
+    depends_on:
+      pgbouncer:
+        condition: service_started
+    networks:
+      - vpn_network
+    volumes:
+      - ./backend:/app
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: vpn_bot
+    restart: always
+    env_file:
+      - .env
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      BACKEND_URL: ${BACKEND_URL}
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS}
+      DATABASE_URL: ${DATABASE_URL}
+      MINI_APP_URL: ${MINI_APP_URL}
+    depends_on:
+      - backend
+    networks:
+      - vpn_network
+    volumes:
+      - ./bot:/app
+
+networks:
+  vpn_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

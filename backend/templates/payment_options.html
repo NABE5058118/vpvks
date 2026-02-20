@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subscription Payment</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #0a0a0a;
+            color: #00ffff;
+            line-height: 1.4;
+            padding: 16px;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 255, 255, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 85% 30%, rgba(0, 150, 255, 0.05) 0%, transparent 20%),
+                linear-gradient(45deg, #0a0a0a 25%, #0f0f0f 25%, #0f0f0f 50%, #0a0a0a 50%, #0a0a0a 75%, #0f0f0f 75%, #0f0f0f);
+            background-size: 4px 4px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(15, 15, 15, 0.95);
+            border-radius: 0;
+            padding: 20px;
+            border: 2px solid #00ffff;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #00ffff 20%, 
+                #00ffff 80%, 
+                transparent 100%);
+            animation: scanline 3s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0 30px;
+            border-bottom: 2px solid #00ffff;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '■ ■ ■';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ffff;
+            letter-spacing: 5px;
+            font-size: 12px;
+        }
+
+        .header h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 18px;
+            font-weight: normal;
+            color: #00ffff;
+            margin-bottom: 10px;
+            text-shadow: 
+                0 0 10px rgba(0, 255, 255, 0.5),
+                0 0 20px rgba(0, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: #80ffff;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .plan-card {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid;
+            border-image: linear-gradient(45deg, #00ffff, #0099cc) 1;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 8px 25px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            border-image: linear-gradient(45deg, #00ffff, #00ccff) 1;
+        }
+
+        .plan-card::before {
+            content: '[ SELECT ]';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: #00ffff;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .plan-card:hover::before {
+            opacity: 1;
+        }
+
+        .plan-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #00ffff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        .plan-price {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            color: #ffff00;
+            margin: 15px 0;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 0, 0.5),
+                0 0 5px rgba(255, 255, 0, 0.3);
+        }
+
+        .plan-description {
+            color: #80ffff;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            padding-top: 15px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            font-weight: normal;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #003333, #006666);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #00ffff;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(45deg, #004444, #008888);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 5px 15px rgba(0, 255, 255, 0.3),
+                0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(0, 255, 255, 0.2),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, #333333, #666666);
+            color: #cccccc;
+            border-color: #666666;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(45deg, #444444, #777777);
+            color: #ffffff;
+            border-color: #888888;
+        }
+
+        .error {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff3333;
+            padding: 15px;
+            text-align: center;
+            margin: 10px 0;
+            border: 1px solid #ff3333;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hacker-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            padding: 3px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            border: 1px solid #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hacker-grid"></div>
+        <div class="header">
+            <h1>[ $ ] SUBSCRIPTION PAYMENT</h1>
+            <p>/// SELECT TARIFF PLAN</p>
+        </div>
+
+        <div id="plans-container">
+            <!-- Plans will be loaded here -->
+        </div>
+
+        <button class="btn back-btn" onclick="goBack()">← BACK TO MAIN</button>
+    </div>
+
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+
+        tg.ready();
+        tg.expand();
+
+        // Set header color
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#0a0a0a');
+
+        // Get user ID from Telegram
+        const userId = tg.initDataUnsafe?.user?.id || 1;
+
+        // Load plans
+        async function loadPlans() {
+            try {
+                const response = await fetch('/api/payment/plans');
+                const plans = await response.json();
+
+                const container = document.getElementById('plans-container');
+
+                if (plans && Array.isArray(plans)) {
+                    let plansHtml = '';
+
+                    const badges = ['[ POPULAR ]', '[ RECOMMENDED ]', '[ ECONOMY ]', '[ PREMIUM ]'];
+
+                    plans.forEach((plan, index) => {
+                        const badge = badges[index % badges.length];
+                        plansHtml += `
+                            <div class="plan-card">
+                                <div class="plan-badge">${badge}</div>
+                                <div class="plan-name">${plan.name.toUpperCase()}</div>
+                                <div class="plan-price">${plan.price} ₽</div>
+                                <div class="plan-description">${plan.description}<br><br>ACCESS: FULL VPN<br>SPEED: UNLIMITED<br>PROTOCOL: WIREGUARD</div>
+                                <button class="btn" onclick="selectPlan('${plan.id}', ${plan.price}, '${plan.name}')">SELECT PLAN</button>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = plansHtml;
+                } else {
+                    container.innerHTML = '<div class="error">ERROR LOADING PLANS</div>';
+                }
+            } catch (error) {
+                console.error('Error loading plans:', error);
+                document.getElementById('plans-container').innerHTML =
+                    '<div class="error">CONNECTION ERROR: CANNOT LOAD PLANS</div>';
+            }
+        }
+
+        // Select a plan
+        async function selectPlan(planId, price, name) {
+            // Show confirmation with hacker style
+            if (!confirm(`CONFIRM SELECTION:\n\n${name.toUpperCase()}\nPRICE: ${price} ₽\n\nCONTINUE?`)) {
+                return;
+            }
+
+            // Create payment
+            try {
+                const response = await fetch('/api/payment/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        plan_type: planId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (data.payment.confirmation_url) {
+                        // Open payment page in new window
+                        window.open(data.payment.confirmation_url, '_blank');
+
+                        // Show success message
+                        alert('REDIRECTING TO PAYMENT PAGE\nSTATUS WILL UPDATE AUTOMATICALLY');
+                    } else {
+                        alert('PAYMENT CREATED\nFOLLOW INSTRUCTIONS TO COMPLETE');
+                    }
+                } else {
+                    alert('PAYMENT ERROR: ' + (data.message || 'UNKNOWN ERROR'));
+                }
+            } catch (error) {
+                console.error('Error creating payment:', error);
+                alert('PAYMENT CREATION FAILED\nTRY AGAIN LATER');
+            }
+        }
+
+        // Go back to main Mini App
+        function goBack() {
+            window.history.back();
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPlans();
+            
+            // Add random glitch effect
+            setInterval(() => {
+                const plans = document.querySelectorAll('.plan-card');
+                const randomPlan = plans[Math.floor(Math.random() * plans.length)];
+                if (randomPlan) {
+                    randomPlan.style.filter = 'hue-rotate(90deg)';
+                    setTimeout(() => {
+                        randomPlan.style.filter = 'none';
+                    }, 100);
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
