@@ -1,45 +1,67 @@
+# ===========================================
+# VPN Bot Project + Marzban
+# ===========================================
+
 services:
+  # ===========================================
+  # Marzban (V2Ray/Trojan/Reality)
+  # ===========================================
   marzban:
     image: gozargah/marzban:latest
     container_name: marzban
     restart: always
     env_file:
-      - marzban.env               # отдельный env-файл для Marzban
-    network_mode: host
+      - marzban.env
+    environment:
+      - DATABASE_URL=postgresql://marzban:${MARZBAN_DB_PASSWORD}@marzban-db:5432/marzban
+      - SQLALCHEMY_DATABASE_URL=postgresql://marzban:${MARZBAN_DB_PASSWORD}@marzban-db:5432/marzban
+      - XRAY_JSON=/var/lib/marzban/xray_config.json
+    ports:
+      - "127.0.0.1:8000:8000"
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       marzban-db:
         condition: service_healthy
+    networks:
+      - marzban_network
 
   marzban-db:
     image: postgres:15-alpine
     container_name: marzban_postgres
     restart: always
     env_file:
-      - marzban.env               # тот же env-файл, что и для marzban
-    network_mode: host
+      - marzban.env
+    environment:
+      POSTGRES_DB: marzban
+      POSTGRES_USER: marzban
+      POSTGRES_PASSWORD: ${MARZBAN_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - /var/lib/marzban-db:/var/lib/postgresql/data
+    networks:
+      - marzban_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U marzban -d marzban"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ===========================================
+  # VPN Bot Project
+  # ===========================================
   postgres:
     image: postgres:17-alpine
     container_name: vpn_postgres
     restart: always
     env_file:
-      - .env                      # основной env-файл для бота/бэкенда
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: ${PGDATA}
-    # Порт хоста не пробрасывается – только внутри bridge-сети
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -65,7 +87,7 @@ services:
       AUTH_TYPE: ${AUTH_TYPE}
       IGNORE_STARTUP_PARAMETERS: ${IGNORE_STARTUP_PARAMETERS}
     ports:
-      - "6432:5432"               # PgBouncer доступен на хосте через порт 6432
+      - "6432:5432"
     depends_on:
       postgres:
         condition: service_healthy
@@ -124,10 +146,18 @@ services:
     volumes:
       - ./bot:/app
 
+# ===========================================
+# Networks
+# ===========================================
 networks:
   vpn_network:
     driver: bridge
+  marzban_network:
+    driver: bridge
 
+# ===========================================
+# Volumes
+# ===========================================
 volumes:
   postgres_data:
     driver: local
