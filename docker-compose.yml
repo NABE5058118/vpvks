@@ -15,10 +15,11 @@ services:
     env_file:
       - marzban.env
     environment:
+      - UVICORN_HOST=0.0.0.0
       - SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzban/db.sqlite3
       - XRAY_JSON=/var/lib/marzban/xray_config.json
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
