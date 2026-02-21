@@ -15,40 +15,14 @@ services:
     env_file:
       - marzban.env
     environment:
-      - DATABASE_URL=postgresql://marzban:${MARZBAN_DB_PASSWORD}@marzban-db:5432/marzban
-      - SQLALCHEMY_DATABASE_URL=postgresql://marzban:${MARZBAN_DB_PASSWORD}@marzban-db:5432/marzban
       - XRAY_JSON=/var/lib/marzban/xray_config.json
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      marzban-db:
-        condition: service_healthy
     networks:
       - marzban_network
-
-  marzban-db:
-    image: postgres:15-alpine
-    container_name: marzban_postgres
-    restart: always
-    env_file:
-      - marzban.env
-    environment:
-      POSTGRES_DB: marzban
-      POSTGRES_USER: marzban
-      POSTGRES_PASSWORD: ${MARZBAN_DB_PASSWORD}
-      PGDATA: /var/lib/postgresql/data
-    volumes:
-      - /var/lib/marzban-db:/var/lib/postgresql/data
-    networks:
-      - marzban_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U marzban -d marzban"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ===========================================
   # VPN Bot Project
