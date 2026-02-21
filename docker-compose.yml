@@ -7,7 +7,9 @@ services:
   # Marzban (V2Ray/Trojan/Reality)
   # ===========================================
   marzban:
-    image: gozargah/marzban:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.marzban
     container_name: marzban
     restart: always
     env_file:
