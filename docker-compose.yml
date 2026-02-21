@@ -18,13 +18,10 @@ services:
       - UVICORN_HOST=0.0.0.0
       - SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzban/db.sqlite3
       - XRAY_JSON=/var/lib/marzban/xray_config.json
-    ports:
-      - "8000:8000"
+    network_mode: host
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    networks:
-      - marzban_network
 
   # ===========================================
   # VPN Bot Project
@@ -124,13 +121,27 @@ services:
     volumes:
       - ./bot:/app
 
+  # ===========================================
+  # Nginx для Marzban (reverse proxy)
+  # ===========================================
+  marzban-nginx:
+    image: nginx:alpine
+    container_name: marzban_nginx
+    restart: always
+    volumes:
+      - ./marzban_nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - marzban
+    networks:
+      - vpn_network
+    ports:
+      - "127.0.0.1:8001:80"
+
 # ===========================================
 # Networks
 # ===========================================
 networks:
   vpn_network:
-    driver: bridge
-  marzban_network:
     driver: bridge
 
 # ===========================================
