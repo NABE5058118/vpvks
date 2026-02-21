@@ -15,6 +15,7 @@ services:
     env_file:
       - marzban.env
     environment:
+      - SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzban/db.sqlite3
       - XRAY_JSON=/var/lib/marzban/xray_config.json
     ports:
       - "127.0.0.1:8000:8000"
