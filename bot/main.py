@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 import aiohttp
 from utils.validation import validate_user_id, sanitize_input
 
+# Импорты обработчиков VPN ключей
+from handlers.vpn_key_handler import get_vpn_key, handle_vpn_selection, renew_vpn_key, handle_renew_selection
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /start command"""
@@ -58,6 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - главное меню\n"
         "/help - справка по командам\n"
         "/status - проверить статус VPN-подключения\n"
+        "/key - получить ключ VPN (V2Ray/WireGuard)\n"
         "/connect - подключиться к VPN\n"
         "/disconnect - отключиться от VPN\n"
         "/payment - управление подпиской и оплата\n"
@@ -73,6 +77,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - главное меню\n"
         "/help - эта справка\n"
         "/status - проверить статус VPN-подключения\n"
+        "/key - получить ключ VPN (V2Ray/WireGuard)\n"
         "/connect - подключиться к VPN\n"
         "/disconnect - отключиться от VPN\n"
         "/payment - управление подпиской и оплата\n"
@@ -286,12 +291,46 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /key command for getting VPN keys"""
+    await get_vpn_key(update, context)
+
+
+async def renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /renew command for renewing VPN keys"""
+    await renew_vpn_key(update, context)
+
+
 async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle both plan selection and admin panel callbacks from inline keyboard"""
     query = update.callback_query
     await query.answer()
-
-    # For simplicity, just respond to any callback
+    
+    # Определяем тип callback data и передаём соответствующему обработчику
+    callback_data = query.data
+    
+    # Обработка выбора VPN
+    if callback_data in ["vpn_v2ray", "vpn_wireguard"]:
+        await handle_vpn_selection(update, context)
+        return
+    
+    # Обработка перевыпуска VPN
+    if callback_data in ["renew_v2ray", "renew_wireguard", "renew_cancel"]:
+        await handle_renew_selection(update, context)
+        return
+    
+    # Обработка платежей и админки
+    if callback_data.startswith("plan_"):
+        # Обработка выбора тарифа
+        await query.edit_message_text(text="Выбранный тариф обрабатывается...")
+        return
+    
+    if callback_data.startswith("admin_"):
+        # Обработка админ панели
+        await query.edit_message_text(text="Админ панель в разработке...")
+        return
+    
+    # По умолчанию
     await query.edit_message_text(text="Функция в разработке. Пожалуйста, используйте команды бота.")
 
 
@@ -317,6 +356,8 @@ def main():
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CommandHandler("status", status))
+        application.add_handler(CommandHandler("key", key_command))
+        application.add_handler(CommandHandler("renew", renew_command))
         application.add_handler(CommandHandler("connect", connect))
         application.add_handler(CommandHandler("disconnect", disconnect))
         application.add_handler(CommandHandler("payment", payments))
@@ -324,8 +365,7 @@ def main():
         application.add_handler(CommandHandler("app", app_command))
         application.add_handler(CommandHandler("admin", admin_command))
 
-        # Register callback query handler for both plan selection and admin panel
-        # The handler determines which type of callback it is based on the data
+        # Register callback query handler for VPN selection, renew, plans, admin
         application.add_handler(CallbackQueryHandler(handle_plan_selection))
 
         # Start the bot

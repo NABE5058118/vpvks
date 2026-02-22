@@ -866,6 +866,93 @@ def get_vpn_configs():
         return jsonify({'error': str(e)}), 500
 
 
+# =========================================================
+# Marzban (V2Ray/Trojan/Reality) API endpoints
+# =========================================================
+
+@routes_bp.route('/api/marzban/create', methods=['POST'])
+def create_marzban_user_route():
+    """Создание пользователя в Marzban (V2Ray/Trojan)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        tariff = data.get('tariff', 'standard')
+        
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+        
+        result = vpn_service.create_marzban_user(user_id, tariff)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in create_marzban_user_route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/marzban/subscription/<int:user_id>', methods=['GET'])
+def get_marzban_subscription_route(user_id):
+    """Получение подписки пользователя из Marzban"""
+    try:
+        result = vpn_service.get_marzban_subscription(user_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in get_marzban_subscription_route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/marzban/remove/<int:user_id>', methods=['POST'])
+def remove_marzban_user_route(user_id):
+    """Удаление пользователя из Marzban"""
+    try:
+        result = vpn_service.remove_marzban_user(user_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in remove_marzban_user_route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/marzban/extend/<int:user_id>', methods=['POST'])
+def extend_marzban_user_route(user_id):
+    """Продление подписки пользователя в Marzban"""
+    try:
+        data = request.get_json()
+        days = data.get('days', 30)
+        result = vpn_service.extend_marzban_user(user_id, days)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in extend_marzban_user_route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/vpn/choose', methods=['GET'])
+def choose_vpn_type():
+    """Выбор типа VPN (WireGuard или V2Ray)"""
+    try:
+        return jsonify({
+            'status': 'success',
+            'vpn_types': [
+                {
+                    'type': 'v2ray',
+                    'name': 'V2Ray (VLESS/Trojan)',
+                    'description': 'Лучше обходит блокировки',
+                    'protocols': ['VLESS Reality', 'Trojan TLS']
+                },
+                {
+                    'type': 'wireguard',
+                    'name': 'WireGuard',
+                    'description': 'Высокая скорость',
+                    'protocols': ['WireGuard']
+                }
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Error in choose_vpn_type: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# =========================================================
+# Payment success/error pages
+# =========================================================
+
 @routes_bp.route('/payment-success', methods=['GET'])
 def payment_success():
     """Page shown after successful payment return from YooKassa"""

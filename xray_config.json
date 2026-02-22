@@ -1,0 +1,74 @@
+{
+  "log": {"loglevel": "info"},
+  "dns": {"servers": ["127.0.0.1"]},
+  "inbounds": [
+    {
+      "tag": "api",
+      "port": 62789,
+      "protocol": "dokodemo-door",
+      "listen": "127.0.0.1",
+      "settings": {"address": "127.0.0.1"}
+    },
+    {
+      "tag": "VLESS Reality",
+      "listen": "0.0.0.0",
+      "port": 8443,
+      "protocol": "vless",
+      "settings": {"clients": [], "decryption": "none"},
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "google.com:443",
+          "xver": 0,
+          "serverNames": ["google.com", "www.google.com"],
+          "privateKey": "QN0cBLocXjhUU4dobfBoIc7Ej4ZsalIMTfv1zzkYERU",
+          "shortIds": ["", "abc123def456"]
+        }
+      },
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    },
+    {
+      "tag": "Trojan TLS",
+      "listen": "0.0.0.0",
+      "port": 2083,
+      "protocol": "trojan",
+      "settings": {"clients": []},
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [{
+            "certificateFile": "/etc/letsencrypt/live/vpvks.ru/fullchain.pem",
+            "keyFile": "/etc/letsencrypt/live/vpvks.ru/privkey.pem"
+          }],
+          "alpn": ["h2", "http/1.1"]
+        }
+      },
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    }
+  ],
+  "outbounds": [
+    {"protocol": "freedom", "tag": "DIRECT"},
+    {"protocol": "blackhole", "tag": "BLOCK"}
+  ],
+  "routing": {
+    "rules": [
+      {
+        "outboundTag": "DIRECT",
+        "domain": [
+          "full:cp.cloudflare.com",
+          "domain:msftconnecttest.com",
+          "domain:msftncsi.com",
+          "domain:connectivitycheck.gstatic.com",
+          "domain:captive.apple.com",
+          "full:detectportal.firefox.com"
+        ],
+        "type": "field"
+      },
+      {"ip": ["geoip:private"], "outboundTag": "BLOCK", "type": "field"}
+    ]
+  },
+  "stats": {}
+}
