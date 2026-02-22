@@ -285,11 +285,12 @@ PersistentKeepalive = 25
                 }
             
             # Создание пользователя
+            # В новой версии Marzban proxies передаётся как словарь
             result = self.marzban.create_user(
                 username=username,
                 data_limit=tariff_data["limit"],
                 expire_days=tariff_data["days"],
-                protocols=["vless", "trojan"]
+                protocols={"vless": {}, "trojan": {}}
             )
             
             if result.get("status") == "success":

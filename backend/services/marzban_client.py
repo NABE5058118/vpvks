@@ -39,11 +39,15 @@ class MarzbanClient:
             return None
     
     def create_user(self, username: str, data_limit: int, expire_days: int, 
-                    protocols: list = ["vless", "trojan"]) -> dict:
+                    protocols: dict = None) -> dict:
         """Создание пользователя в Marzban"""
         token = self.get_token()
         if not token:
             return {"status": "error", "message": "Failed to get token"}
+        
+        # Протоколы по умолчанию для новой версии Marzban
+        if protocols is None:
+            protocols = {"vless": {}, "trojan": {}}
         
         try:
             headers = {"Authorization": f"Bearer {token}"}
