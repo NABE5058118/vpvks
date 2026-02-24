@@ -101,11 +101,11 @@ class MarzbanClient:
             subscription_url = user_data.get('subscription_url', '')
             
             if subscription_url:
-                # Если URL относительный (начинается с /), добавляем базовый URL
+                # Если URL относительный (начинается с /), добавляем публичный домен
                 if subscription_url.startswith('/'):
-                    # Используем базовый URL без порта для подписок
-                    base_url = self.base_url.replace(':8000', '')
-                    return f"{base_url}{subscription_url}"
+                    # Используем публичный домен из переменных окружения
+                    public_url = os.getenv('MARZBAN_PUBLIC_URL', 'https://vpvks.ru')
+                    return f"{public_url}{subscription_url}"
                 return subscription_url
             return None
         except Exception as e:
