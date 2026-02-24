@@ -20,8 +20,7 @@ services:
       - XRAY_JSON=/var/lib/marzban/xray_config.json
       - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/vpvks.ru/fullchain.pem
       - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/vpvks.ru/privkey.pem
-    networks:
-      - vpn_network
+    network_mode: host
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
