@@ -276,13 +276,22 @@ PersistentKeepalive = 25
             if existing_user.get("status") == "success":
                 # Пользователь уже существует, получаем ссылку подписки
                 subscription_url = self.marzban.get_subscription_url(username)
-                return {
-                    "status": "success",
-                    "protocol": "v2ray",
-                    "subscription_url": subscription_url,
-                    "username": username,
-                    "message": "User already exists, retrieved existing subscription"
-                }
+                if subscription_url:
+                    return {
+                        "status": "success",
+                        "protocol": "v2ray",
+                        "subscription_url": subscription_url,
+                        "username": username,
+                        "message": "Existing user, retrieved subscription"
+                    }
+                else:
+                    return {
+                        "status": "success",
+                        "protocol": "v2ray",
+                        "subscription_url": None,
+                        "username": username,
+                        "message": "User exists but no subscription URL"
+                    }
             
             # Создание пользователя
             # В новой версии Marzban proxies передаётся как словарь
@@ -292,11 +301,11 @@ PersistentKeepalive = 25
                 expire_days=tariff_data["days"],
                 protocols={"vless": {}, "trojan": {}}
             )
-            
+
             if result.get("status") == "success":
                 # Получение ссылки подписки
                 subscription_url = self.marzban.get_subscription_url(username)
-                
+
                 return {
                     "status": "success",
                     "protocol": "v2ray",
