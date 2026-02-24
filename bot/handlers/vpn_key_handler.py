@@ -21,7 +21,7 @@ async def get_vpn_key(update: Update, context):
     keyboard = [
         [
             InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
-            InlineKeyboardButton("🛡️ WireGuard, callback_data="vpn_wireguard"),
+            InlineKeyboardButton("🛡️ WireGuard", callback_data="vpn_wireguard"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -114,7 +114,7 @@ async def renew_vpn_key(update: Update, context):
     keyboard = [
         [
             InlineKeyboardButton("🔒 V2Ray", callback_data="renew_v2ray"),
-            InlineKeyboardButton("🛡️ WireGuard, callback_data="renew_wireguard"),
+            InlineKeyboardButton("🛡️ WireGuard", callback_data="renew_wireguard"),
         ],
         [
             InlineKeyboardButton("❌ Отмена", callback_data="renew_cancel"),
