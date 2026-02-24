@@ -18,7 +18,10 @@ services:
       - UVICORN_HOST=0.0.0.0
       - SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzban/db.sqlite3
       - XRAY_JSON=/var/lib/marzban/xray_config.json
-    network_mode: host
+      - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/vpvks.ru/fullchain.pem
+      - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/vpvks.ru/privkey.pem
+    networks:
+      - vpn_network
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -74,6 +77,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: vpn_backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
     env_file:
       - .env
