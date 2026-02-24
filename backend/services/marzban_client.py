@@ -84,17 +84,30 @@ class MarzbanClient:
         token = self.get_token()
         if not token:
             return None
-
+        
         try:
             headers = {"Authorization": f"Bearer {token}"}
+            # Сначала получаем информацию о пользователе
             response = requests.get(
-                f"{self.base_url}/api/user/{username}/subscription",
+                f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
                 verify=False
             )
             response.raise_for_status()
-            return response.text
+            user_data = response.json()
+            
+            # Извлекаем subscription_url из данных пользователя
+            subscription_url = user_data.get('subscription_url', '')
+            
+            if subscription_url:
+                # Если URL относительный (начинается с /), добавляем базовый URL
+                if subscription_url.startswith('/'):
+                    # Используем базовый URL без порта для подписок
+                    base_url = self.base_url.replace(':8000', '')
+                    return f"{base_url}{subscription_url}"
+                return subscription_url
+            return None
         except Exception as e:
             logger.error(f"Error getting subscription URL: {e}")
             return None
