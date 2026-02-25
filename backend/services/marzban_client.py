@@ -111,6 +111,19 @@ class MarzbanClient:
 
         try:
             headers = {"Authorization": f"Bearer {token}"}
+            
+            # Проверяем что timestamp правильный (должен быть в будущем)
+            import time
+            current_time = int(time.time())
+            logger.info(f"Current timestamp: {current_time}")
+            logger.info(f"Expire timestamp: {expire_timestamp}")
+            logger.info(f"Diff: {expire_timestamp - current_time} seconds ({(expire_timestamp - current_time) // 86400} days)")
+            
+            # Если timestamp в прошлом - используем +3650 дней от сейчас
+            if expire_timestamp <= current_time:
+                logger.warning("Expire timestamp is in the past! Using current time + 3650 days")
+                expire_timestamp = current_time + (3650 * 86400)
+            
             payload = {
                 "username": username,
                 "proxies": protocols,
@@ -118,8 +131,7 @@ class MarzbanClient:
                 "expire": expire_timestamp  # Явно передаём timestamp
             }
             
-            logger.info(f"Creating user {username} with expire={expire_timestamp}")
-            logger.info(f"Payload: {payload}")
+            logger.info(f"Final payload: {payload}")
 
             response = requests.post(
                 f"{self.base_url}/api/user",
