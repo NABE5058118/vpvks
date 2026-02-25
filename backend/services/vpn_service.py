@@ -261,16 +261,32 @@ PersistentKeepalive = 25
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
         """Создание пользователя в Marzban (V2Ray/Trojan)"""
         try:
+            # Check if user exists and has active subscription
+            from models.user import User
+            user = User.get_by_id(user_id)
+            if not user:
+                return {
+                    'status': 'error',
+                    'message': f'User {user_id} not found'
+                }
+
+            # Check if user has active subscription (testers always have access)
+            if not user.is_subscription_active():
+                return {
+                    'status': 'error',
+                    'message': 'Subscription is not active. Please purchase a subscription.'
+                }
+
             # Тарифы
             tariffs = {
                 "start": {"limit": 10 * 1024**3, "days": 30},      # 10 GB
                 "standard": {"limit": 50 * 1024**3, "days": 30},   # 50 GB
                 "premium": {"limit": 100 * 1024**3, "days": 30},   # 100 GB
             }
-            
+
             tariff_data = tariffs.get(tariff, tariffs["standard"])
             username = f"user_{user_id}"
-            
+
             # Проверка, существует ли уже пользователь
             existing_user = self.marzban.get_user(username)
             if existing_user.get("status") == "success":
@@ -292,7 +308,7 @@ PersistentKeepalive = 25
                         "username": username,
                         "message": "User exists but no subscription URL"
                     }
-            
+
             # Создание пользователя
             # В новой версии Marzban proxies передаётся как словарь
             result = self.marzban.create_user(
@@ -316,7 +332,7 @@ PersistentKeepalive = 25
                 }
             else:
                 return result
-                
+
         except Exception as e:
             logger.error(f"Error creating Marzban user: {e}")
             return {"status": "error", "message": str(e)}

@@ -22,6 +22,7 @@ class User(db.Model):
     last_charge_date = db.Column(db.Date, nullable=True)  # Date of last daily charge
     connection_history = db.Column(db.Text, nullable=True)  # Store as JSON string
     balance = db.Column(db.Integer, default=0)  # User balance in stars
+    is_tester = db.Column(db.Boolean, default=False)  # Tester flag for unlimited access
 
     def to_dict(self):
         """Convert user object to dictionary"""
@@ -35,7 +36,8 @@ class User(db.Model):
             'trial_used': self.trial_used,
             'last_charge_date': self.last_charge_date.isoformat() if self.last_charge_date else None,
             'connection_history': self.connection_history,
-            'balance': self.balance
+            'balance': self.balance,
+            'is_tester': self.is_tester
         }
 
     def add_connection_log(self, connected=True):
@@ -69,6 +71,9 @@ class User(db.Model):
 
     def is_subscription_active(self):
         """Check if user's subscription is active"""
+        # Testers have unlimited access
+        if self.is_tester:
+            return True
         if self.subscription_end_date is None:
             return False
         return self.subscription_end_date >= datetime.utcnow()

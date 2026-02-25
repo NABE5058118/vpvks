@@ -950,6 +950,113 @@ def choose_vpn_type():
 
 
 # =========================================================
+# Testers Management (6 free unlimited keys)
+# =========================================================
+
+@routes_bp.route('/api/testers', methods=['GET'])
+def get_testers():
+    """Get list of all testers"""
+    try:
+        from models.user import User
+        
+        all_users = User.get_all_users()
+        testers_list = [user.to_dict() for user in all_users if user.is_tester]
+        
+        return jsonify({
+            'status': 'success',
+            'testers': testers_list,
+            'count': len(testers_list)
+        })
+    except Exception as e:
+        print(f"Error getting testers: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/testers/add', methods=['POST'])
+def add_tester():
+    """Add a user to testers list (unlimited access)"""
+    try:
+        from models.user import User
+        from database.db_config import db
+        
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+        
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Check if already a tester
+        if user.is_tester:
+            return jsonify({'message': 'User is already a tester'})
+        
+        # Mark as tester
+        user.is_tester = True
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'User {user_id} added to testers'
+        })
+    except Exception as e:
+        print(f"Error adding tester: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/testers/remove', methods=['POST'])
+def remove_tester():
+    """Remove a user from testers list"""
+    try:
+        from models.user import User
+        from database.db_config import db
+        
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+        
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Remove tester status
+        user.is_tester = False
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'User {user_id} removed from testers'
+        })
+    except Exception as e:
+        print(f"Error removing tester: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/testers/check/<int:user_id>', methods=['GET'])
+def check_tester(user_id):
+    """Check if user is a tester"""
+    try:
+        from models.user import User
+        
+        user = User.get_by_id(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        return jsonify({
+            'status': 'success',
+            'user_id': user_id,
+            'is_tester': user.is_tester
+        })
+    except Exception as e:
+        print(f"Error checking tester: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+# =========================================================
 # Payment success/error pages
 # =========================================================
 
