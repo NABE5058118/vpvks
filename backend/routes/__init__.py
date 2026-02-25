@@ -166,19 +166,19 @@ PersistentKeepalive = 25
 
 @routes_bp.route('/api/wireguard/qr/<int:user_id>', methods=['GET'])
 def get_wireguard_qr(user_id):
-    """Get QR code with WireGuard configuration for user"""
+    """Get QR code with WireGuard configuration for user - БЕСПЛАТНО"""
     try:
         # Check if user exists
         user = User.get_by_id(user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Check if user has active subscription
-        if not user.is_subscription_active():
-            return jsonify({
-                'error': 'Subscription is not active',
-                'message': 'Please purchase a subscription to download VPN config'
-            }), 403
+        # Убираем проверку подписки - все ключи бесплатные!
+        # if not user.is_subscription_active():
+        #     return jsonify({
+        #         'error': 'Subscription is not active',
+        #         'message': 'Please purchase a subscription to download VPN config'
+        #     }), 403
 
         # Get or generate user's VPN config
         vpn_config = VPNConfig.get_by_user_id(user_id)
@@ -229,7 +229,7 @@ PersistentKeepalive = 25
             'config_base64': config_base64,
             'config_text': wg_config
         })
-        
+
         # Ensure correct content type
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         return response

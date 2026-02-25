@@ -21,7 +21,7 @@ from handlers.vpn_key_handler import get_vpn_key, handle_vpn_selection, renew_vp
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /start command with beautiful inline keyboard"""
+    """Handle the /start command - register user and show menu"""
     user_id = update.effective_user.id
 
     if not validate_user_id(user_id):
@@ -43,7 +43,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     try:
-        # Используем асинхронный клиент для запроса к backend
         timeout = aiohttp.ClientTimeout(total=30, connect=10)
         connector = aiohttp.TCPConnector(ssl=False)
 
@@ -54,32 +53,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error registering user {user_id}: {e}")
 
-    # Create beautiful inline keyboard
+    # Get user balance from backend
+    balance = 0
+    try:
+        timeout = aiohttp.ClientTimeout(total=10, connect=5)
+        connector = aiohttp.TCPConnector(ssl=False)
+        
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    balance = data.get('balance', 0)
+    except Exception as e:
+        logger.error(f"Error getting balance: {e}")
+
+    # Create inline keyboard
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     
     keyboard = [
         [
-            InlineKeyboardButton("🔑 Мой ключ", callback_data="menu_key"),
             InlineKeyboardButton("📱 Mini App", callback_data="menu_app"),
         ],
         [
-            InlineKeyboardButton("💳 Тарифы", callback_data="menu_tariffs"),
-            InlineKeyboardButton("📊 Статус", callback_data="menu_status"),
-        ],
-        [
-            InlineKeyboardButton("ℹ️ Помощь", callback_data="menu_help"),
+            InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
+            InlineKeyboardButton("🔑 Мои ключи", callback_data="menu_keys"),
         ]
     ]
     
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # Welcome message
+    username_display = f"@{username}" if username else first_name or "Пользователь"
+    
     welcome_message = (
-        f"👋 <b>Добро пожаловать, {first_name or username}!</b>\n\n"
-        "🚀 <b>VPVKS VPN</b> — твой быстрый и безопасный VPN\n\n"
-        "🔒 Обходит блокировки\n"
-        "⚡ Высокая скорость\n"
-        "🌍 Сервер в Стокгольме\n\n"
-        "<b>Выберите действие:</b>"
+        f"👋 Привет, {username_display}!\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n"
+        f"💰 Баланс: {balance} ₽\n\n"
+        "Управляй подпиской через меню 👇"
     )
     
     await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='HTML')
@@ -284,73 +294,20 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if not is_admin(user_id):
-        await update.message.reply_text("❌ У вас нет прав администратора для доступа к этой команде.")
+        await update.message.reply_text("❌ У вас нет прав администратора.")
         return
 
-    # Create inline keyboard for admin panel
     keyboard = [
         [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton("👥 Пользователи", callback_data="admin_users")],
-        [InlineKeyboardButton("🔑 Тестировщики", callback_data="admin_testers")],
-        [InlineKeyboardButton("💳 Платежи", callback_data="admin_payments")],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "🛡️ <b>АДМИН-ПАНЕЛЬ VPN</b>\n\n"
-        "Выберите раздел:",
-        reply_markup=reply_markup,
-        parse_mode='HTML'
+        "🛡️ АДМИН-ПАНЕЛЬ\n\nВыберите раздел:",
+        reply_markup=reply_markup
     )
-
-
-async def tester_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /tester command - add user to testers (admin only)"""
-    from config import is_admin
-    
-    user_id = update.effective_user.id
-    
-    if not is_admin(user_id):
-        await update.message.reply_text("❌ У вас нет прав администратора.")
-        return
-    
-    # Get user ID to add as tester
-    if context.args and len(context.args) > 0:
-        try:
-            target_user_id = int(context.args[0])
-            
-            timeout = aiohttp.ClientTimeout(total=30, connect=10)
-            connector = aiohttp.TCPConnector(ssl=False)
-            
-            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-                async with session.post(
-                    f"{BACKEND_URL}/api/testers/add",
-                    json={'user_id': target_user_id}
-                ) as response:
-                    result = await response.json()
-                    
-                    if response.status == 200 and result.get('status') == 'success':
-                        await update.message.reply_text(
-                            f"✅ Пользователь {target_user_id} добавлен в тестировщики!\n\n"
-                            f"Теперь у него есть безлимитный доступ к VPN."
-                        )
-                    else:
-                        await update.message.reply_text(
-                            f"❌ Ошибка: {result.get('message', 'Неизвестная ошибка')}"
-                        )
-        except ValueError:
-            await update.message.reply_text("❌ Неверный формат user_id. Используйте: /tester 123456789")
-        except Exception as e:
-            logger.error(f"Error in tester_command: {e}")
-            await update.message.reply_text("❌ Произошла ошибка при добавлении тестировщика.")
-    else:
-        await update.message.reply_text(
-            "🔑 Добавление тестировщика\n\n"
-            "Использование: /tester <user_id>\n\n"
-            "Пример: /tester 699469085\n\n"
-            "Тестировщики получают безлимитный бесплатный доступ к VPN."
-        )
 
 
 async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -374,7 +331,7 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     # Import here to avoid scope issues
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-    # Обработка выбора VPN из старого меню
+    # Обработка выбора VPN
     if callback_data in ["vpn_v2ray", "vpn_wireguard"]:
         await handle_vpn_selection(update, context)
         return
@@ -385,8 +342,41 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     # Обработка нового главного меню
-    if callback_data == "menu_key":
-        # Для callback query используем edit_message_text или отправляем новое сообщение
+    if callback_data == "menu_app":
+        from config import MINI_APP_URL
+        keyboard = [[InlineKeyboardButton("📱 Открыть VPN приложение", web_app={"url": MINI_APP_URL})]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📱 Mini App\n\nНажмите кнопку ниже, чтобы открыть приложение:",
+            reply_markup=reply_markup
+        )
+        return
+
+    if callback_data == "menu_balance":
+        # Get balance from backend
+        balance = 0
+        try:
+            timeout = aiohttp.ClientTimeout(total=10, connect=5)
+            connector = aiohttp.TCPConnector(ssl=False)
+            
+            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+                async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        balance = data.get('balance', 0)
+        except Exception as e:
+            logger.error(f"Error getting balance: {e}")
+        
+        await query.edit_message_text(
+            f"💰 Ваш баланс\n\n"
+            f"ID: {user_id}\n"
+            f"Баланс: {balance} ₽\n\n"
+            f"⚠️ Сейчас все ключи бесплатные. Платежи будут добавлены позже."
+        )
+        return
+
+    if callback_data == "menu_keys":
+        # Show keys menu
         keyboard = [
             [
                 InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
@@ -395,93 +385,12 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            "🔑 Выберите тип VPN подключения:\n\n"
-            "🔒 V2Ray (VLESS/Trojan) — лучше обходит блокировки\n"
-            "🛡️ WireGuard — выше скорость и стабильность\n\n"
-            "Оба протокола работают на наших серверах.",
+            "🔑 Выбор протокола\n\n"
+            "🔒 V2Ray — лучше обходит блокировки\n"
+            "🛡️ WireGuard — выше скорость\n\n"
+            "Выберите протокол:",
             reply_markup=reply_markup
         )
-        return
-
-    if callback_data == "menu_app":
-        from config import MINI_APP_URL
-        keyboard = [[InlineKeyboardButton("📱 Открыть VPN приложение", web_app={"url": MINI_APP_URL})]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "📱 <b>Mini App</b>\n\nНажмите кнопку ниже, чтобы открыть приложение:",
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
-        return
-
-    if callback_data == "menu_tariffs":
-        keyboard = [
-            [InlineKeyboardButton("💳 Тарифы подписки", callback_data="show_subscription_plans")],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "💳 <b>Тарифы подписки</b>\n\n"
-            "🔹 1 месяц — 110₽\n"
-            "🔹 4 месяца — 290₽ (выгодно!)\n"
-            "🔹 12 месяцев — 500₽\n\n"
-            "Выберите тариф для оплаты:",
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
-        return
-
-    if callback_data == "menu_status":
-        try:
-            timeout = aiohttp.ClientTimeout(total=30, connect=10)
-            connector = aiohttp.TCPConnector(ssl=False)
-
-            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-                async with session.get(f"{BACKEND_URL}/api/vpn/status/{user_id}") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data.get('status') == 'success':
-                            sub_status = data['subscription']['status']
-                            days_left = data['subscription']['days_left']
-                            
-                            status_text = (
-                                "📊 <b>Статус подписки</b>\n\n"
-                                f"Статус: {'✅ Активна' if sub_status == 'active' else '❌ Просрочена' if sub_status == 'expired' else '🆓 Пробный период'}\n"
-                                f"Осталось дней: {days_left}\n"
-                                f"Триал использован: {'Да' if data['subscription']['trial_used'] else 'Нет'}"
-                            )
-                        else:
-                            status_text = f"⚠️ Ошибка: {data.get('message', 'Неизвестная ошибка')}"
-                    else:
-                        status_text = "⚠️ Не удалось получить статус"
-        except Exception as e:
-            logger.error(f"Error getting status: {e}")
-            status_text = "⚠️ Произошла ошибка при получении статуса"
-        
-        await query.edit_message_text(status_text, parse_mode='HTML')
-        return
-
-    if callback_data == "menu_help":
-        help_text = (
-            "ℹ️ <b>Помощь</b>\n\n"
-            "🔑 <b>Мой ключ</b> — получить VPN ключ (V2Ray или WireGuard)\n"
-            "📱 <b>Mini App</b> — удобное приложение для управления VPN\n"
-            "💳 <b>Тарифы</b> — выбрать и оплатить подписку\n"
-            "📊 <b>Статус</b> — проверить статус подписки\n\n"
-            "🛠️ <b>Приложения для подключения:</b>\n"
-            "• V2Ray: v2rayNG (Android), V2Box (iOS)\n"
-            "• WireGuard: WireGuard (Android/iOS)\n\n"
-            "📞 Поддержка: @relatevpnbot"
-        )
-        await query.edit_message_text(help_text, parse_mode='HTML')
-        return
-
-    # Обработка выбора тарифа
-    if callback_data.startswith("plan_"):
-        await query.edit_message_text(text="⏳ Обработка тарифа...")
-        return
-
-    if callback_data.startswith("admin_"):
-        await query.edit_message_text(text="🛡️ Админ панель в разработке...")
         return
 
     # По умолчанию
@@ -503,31 +412,23 @@ def main():
 
     try:
         logger.info("Creating application with bot token...")
-        # Create the Application and pass it your bot's token
         application = Application.builder().token(BOT_TOKEN).build()
 
-        # Register command handlers (only essential commands)
+        # Register command handlers
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("help", help_command))
-        application.add_handler(CommandHandler("status", status))
         application.add_handler(CommandHandler("key", key_command))
         application.add_handler(CommandHandler("app", app_command))
         application.add_handler(CommandHandler("admin", admin_command))
-        application.add_handler(CommandHandler("tester", tester_command))
 
         # Register callback query handler for menu
         application.add_handler(CallbackQueryHandler(handle_plan_selection))
 
         # Start the bot
         logger.info("Starting VPN Bot polling...")
-
-        # Run the bot until you press Ctrl-C or the process receives SIGINT,
-        # SIGTERM or SIGABRT. This should be used most of the time, since
-        # start_polling() is non-blocking and will stop the bot gracefully.
         application.run_polling(drop_pending_updates=True)
     except Exception as e:
         logger.error(f"Failed to start bot: {e}")
-        logger.error("Make sure TELEGRAM_BOT_TOKEN is set correctly and internet connection is available")
         import traceback
         traceback.print_exc()
 

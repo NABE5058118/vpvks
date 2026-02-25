@@ -259,9 +259,9 @@ PersistentKeepalive = 25
     # =========================================================
     
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
-        """Создание пользователя в Marzban (V2Ray/Trojan)"""
+        """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
-            # Check if user exists and has active subscription
+            # Check if user exists
             from models.user import User
             user = User.get_by_id(user_id)
             if not user:
@@ -270,18 +270,14 @@ PersistentKeepalive = 25
                     'message': f'User {user_id} not found'
                 }
 
-            # Check if user has active subscription (testers always have access)
-            if not user.is_subscription_active():
-                return {
-                    'status': 'error',
-                    'message': 'Subscription is not active. Please purchase a subscription.'
-                }
+            # Убираем проверку подписки - все ключи бесплатные!
+            # Тестировщики и обычные пользователи получают ключи без ограничений
 
-            # Тарифы
+            # Тарифы (все с бесконечным сроком)
             tariffs = {
-                "start": {"limit": 10 * 1024**3, "days": 30},      # 10 GB
-                "standard": {"limit": 50 * 1024**3, "days": 30},   # 50 GB
-                "premium": {"limit": 100 * 1024**3, "days": 30},   # 100 GB
+                "start": {"limit": 10 * 1024**3, "days": 0},      # 10 GB, безлимит дней
+                "standard": {"limit": 50 * 1024**3, "days": 0},   # 50 GB, безлимит дней
+                "premium": {"limit": 100 * 1024**3, "days": 0},   # 100 GB, безлимит дней
             }
 
             tariff_data = tariffs.get(tariff, tariffs["standard"])
@@ -301,25 +297,26 @@ PersistentKeepalive = 25
                         "message": "Existing user, retrieved subscription"
                     }
                 else:
+                    # Пользователь есть, но ссылки нет - продлеваем
+                    result = self.marzban.extend_user(username, 30)
+                    subscription_url = self.marzban.get_subscription_url(username)
                     return {
                         "status": "success",
                         "protocol": "v2ray",
-                        "subscription_url": None,
+                        "subscription_url": subscription_url,
                         "username": username,
-                        "message": "User exists but no subscription URL"
+                        "message": "Extended existing user"
                     }
 
-            # Создание пользователя
-            # В новой версии Marzban proxies передаётся как словарь
+            # Создание пользователя (бесплатно и бесконечно)
             result = self.marzban.create_user(
                 username=username,
                 data_limit=tariff_data["limit"],
-                expire_days=tariff_data["days"],
+                expire_days=0,  # 0 = бесконечно
                 protocols={"vless": {}, "trojan": {}}
             )
 
             if result.get("status") == "success":
-                # Получение ссылки подписки
                 subscription_url = self.marzban.get_subscription_url(username)
 
                 return {
@@ -328,7 +325,7 @@ PersistentKeepalive = 25
                     "subscription_url": subscription_url,
                     "username": username,
                     "data_limit": tariff_data["limit"],
-                    "expire_days": tariff_data["days"]
+                    "expire_days": 0  # Бесконечно
                 }
             else:
                 return result
