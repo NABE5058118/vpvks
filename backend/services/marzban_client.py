@@ -68,9 +68,11 @@ class MarzbanClient:
             }
             
             # Добавляем expire только если не None (бессрочно)
-            if expire_days is not None:
+            if expire_days is not None and expire_days > 0:
+                # Вычисляем дату истечения как Unix timestamp
+                import time
                 payload["expire"] = int(time.time()) + (expire_days * 86400)
-            # Если expire_days=None, не добавляем поле expire - будет бессрочно
+            # Если expire_days=None или 0, не добавляем поле expire - будет бессрочно
 
             response = requests.post(
                 f"{self.base_url}/api/user",
