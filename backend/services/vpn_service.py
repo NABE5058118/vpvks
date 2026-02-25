@@ -273,11 +273,11 @@ PersistentKeepalive = 25
             # Убираем проверку подписки - все ключи бесплатные!
             # Тестировщики и обычные пользователи получают ключи без ограничений
 
-            # Тарифы (все с бесконечным сроком)
+            # Тарифы (все с большим сроком - 10 лет = 3650 дней)
             tariffs = {
-                "start": {"limit": 10 * 1024**3, "days": 0},      # 10 GB, безлимит дней
-                "standard": {"limit": 50 * 1024**3, "days": 0},   # 50 GB, безлимит дней
-                "premium": {"limit": 100 * 1024**3, "days": 0},   # 100 GB, безлимит дней
+                "start": {"limit": 10 * 1024**3, "days": 3650},      # 10 GB, 10 лет
+                "standard": {"limit": 50 * 1024**3, "days": 3650},   # 50 GB, 10 лет
+                "premium": {"limit": 100 * 1024**3, "days": 3650},   # 100 GB, 10 лет
             }
 
             tariff_data = tariffs.get(tariff, tariffs["standard"])
@@ -297,8 +297,8 @@ PersistentKeepalive = 25
                         "message": "Existing user, retrieved subscription"
                     }
                 else:
-                    # Пользователь есть, но ссылки нет - продлеваем
-                    result = self.marzban.extend_user(username, 30)
+                    # Пользователь есть, но ссылки нет - продлеваем на 10 лет
+                    result = self.marzban.extend_user(username, 3650)
                     subscription_url = self.marzban.get_subscription_url(username)
                     return {
                         "status": "success",
@@ -308,11 +308,11 @@ PersistentKeepalive = 25
                         "message": "Extended existing user"
                     }
 
-            # Создание пользователя (бесплатно и бесконечно)
+            # Создание пользователя (бесплатно и на 10 лет)
             result = self.marzban.create_user(
                 username=username,
                 data_limit=tariff_data["limit"],
-                expire_days=0,  # 0 = бесконечно
+                expire_days=tariff_data["days"],  # 3650 дней = 10 лет
                 protocols={"vless": {}, "trojan": {}}
             )
 
@@ -325,7 +325,7 @@ PersistentKeepalive = 25
                     "subscription_url": subscription_url,
                     "username": username,
                     "data_limit": tariff_data["limit"],
-                    "expire_days": 0  # Бесконечно
+                    "expire_days": 3650  # 10 лет
                 }
             else:
                 return result

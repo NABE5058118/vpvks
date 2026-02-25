@@ -44,7 +44,14 @@ class MarzbanClient:
 
     def create_user(self, username: str, data_limit: int, expire_days: int,
                     protocols: dict = None) -> dict:
-        """Создание пользователя в Marzban"""
+        """Создание пользователя в Marzban
+        
+        Args:
+            username: Имя пользователя
+            data_limit: Лимит трафика в байтах
+            expire_days: Срок действия в днях (None = бессрочно)
+            protocols: Протоколы
+        """
         token = self.get_token()
         if not token:
             return {"status": "error", "message": "Failed to get token"}
@@ -58,8 +65,12 @@ class MarzbanClient:
                 "username": username,
                 "proxies": protocols,
                 "data_limit": data_limit,
-                "expire": int(time.time()) + (expire_days * 86400)
             }
+            
+            # Добавляем expire только если не None (бессрочно)
+            if expire_days is not None:
+                payload["expire"] = int(time.time()) + (expire_days * 86400)
+            # Если expire_days=None, не добавляем поле expire - будет бессрочно
 
             response = requests.post(
                 f"{self.base_url}/api/user",

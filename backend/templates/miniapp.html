@@ -495,8 +495,8 @@
                     <span id="status-text">Загрузка...</span>
                 </div>
                 <div class="info-line">
-                    <div>Активен до:</div>
-                    <div><strong id="expiry-date">-</strong></div>
+                    <div>Тариф:</div>
+                    <div><strong id="expiry-date">Бесплатно / Бессрочно</strong></div>
                 </div>
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;" onclick="loadUserData()">
                     <span>🔄</span> Обновить статус
@@ -523,7 +523,7 @@
                 </div>
             </div>
 
-            <div class="warning-box">
+            <div class="warning-box" style="display: none;" id="balance-warning">
                 <div class="warning-icon">⚠️</div>
                 <div class="warning-text">Баланс заканчивается! Пополните счёт, чтобы подписка не отключилась.</div>
             </div>
@@ -686,33 +686,22 @@
                     document.getElementById('username-display').textContent = username;
                 }
 
-                // Скрываем элемент баланса, так как мы удалили систему звёзд
-                const balanceElement = document.getElementById('balance');
-                if (balanceElement) {
-                    balanceElement.parentElement.style.display = 'none';
-                }
-
                 // Запрашиваем статус подписки с сервера
                 const statusResponse = await fetch(`/api/vpn/status/${userId}`);
                 if (statusResponse.ok) {
                     const statusData = await statusResponse.json();
                     if (statusData.status === 'success') {
-                        document.getElementById('status-text').textContent =
-                            statusData.subscription.status === 'active' ? 'Online' : 'Offline';
-
-                        const expiryDate = statusData.subscription.expires_at ?
-                            new Date(statusData.subscription.expires_at).toLocaleDateString() : '-';
-                        document.getElementById('expiry-date').textContent = expiryDate;
+                        // Теперь все ключи бесплатные и бессрочные!
+                        document.getElementById('status-text').textContent = '✅ Активно';
+                        document.getElementById('expiry-date').textContent = 'Бесплатно / Бессрочно';
+                    } else {
+                        document.getElementById('status-text').textContent = '⚠️ Не активно';
+                        document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Мои ключи"';
                     }
                 } else {
                     console.error('Failed to fetch status:', statusResponse.statusText);
-                }
-
-                // Проверяем, нужно ли показывать предупреждение
-                if (balance <= 5) {
-                    document.querySelector('.warning-text').textContent = 'Баланс заканчивается! Пополните счёт, чтобы подписка не отключилась.';
-                } else {
-                    document.querySelector('.warning-text').textContent = 'Всё в порядке! Баланса хватает на несколько дней.';
+                    document.getElementById('status-text').textContent = '⚠️ Ошибка';
+                    document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Мои ключи"';
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
