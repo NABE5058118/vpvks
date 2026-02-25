@@ -49,7 +49,7 @@ class MarzbanClient:
         Args:
             username: Имя пользователя
             data_limit: Лимит трафика в байтах
-            expire_days: Срок действия в днях (None = бессрочно)
+            expire_days: Срок действия в днях
             protocols: Протоколы
         """
         token = self.get_token()
@@ -67,12 +67,12 @@ class MarzbanClient:
                 "data_limit": data_limit,
             }
             
-            # Добавляем expire только если не None (бессрочно)
+            # Добавляем expire только если не None и > 0
             if expire_days is not None and expire_days > 0:
-                # Вычисляем дату истечения как Unix timestamp
                 import time
-                payload["expire"] = int(time.time()) + (expire_days * 86400)
-            # Если expire_days=None или 0, не добавляем поле expire - будет бессрочно
+                expire_timestamp = int(time.time()) + (expire_days * 86400)
+                payload["expire"] = expire_timestamp
+                logger.info(f"Creating user {username} with expire={expire_timestamp} ({expire_days} days)")
 
             response = requests.post(
                 f"{self.base_url}/api/user",
@@ -83,6 +83,55 @@ class MarzbanClient:
             )
             response.raise_for_status()
             return {"status": "success", "data": response.json()}
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 409:
+                return {"status": "error", "message": "User already exists"}
+            logger.error(f"HTTP error creating Marzban user: {e}")
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            logger.error(f"Error creating Marzban user: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def create_user_with_expire(self, username: str, data_limit: int, expire_timestamp: int,
+                    protocols: dict = None) -> dict:
+        """Создание пользователя с явным expire timestamp
+        
+        Args:
+            username: Имя пользователя
+            data_limit: Лимит трафика в байтах
+            expire_timestamp: Unix timestamp когда истекает
+            protocols: Протоколы
+        """
+        token = self.get_token()
+        if not token:
+            return {"status": "error", "message": "Failed to get token"}
+
+        if protocols is None:
+            protocols = {"vless": {}, "trojan": {}}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            payload = {
+                "username": username,
+                "proxies": protocols,
+                "data_limit": data_limit,
+                "expire": expire_timestamp  # Явно передаём timestamp
+            }
+            
+            logger.info(f"Creating user {username} with expire={expire_timestamp}")
+            logger.info(f"Payload: {payload}")
+
+            response = requests.post(
+                f"{self.base_url}/api/user",
+                headers=headers,
+                json=payload,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"User {username} created: {result}")
+            return {"status": "success", "data": result}
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 409:
                 return {"status": "error", "message": "User already exists"}

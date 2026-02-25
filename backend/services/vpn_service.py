@@ -261,8 +261,10 @@ PersistentKeepalive = 25
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
         """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
-            # Check if user exists
+            import time
             from models.user import User
+            
+            # Check if user exists
             user = User.get_by_id(user_id)
             if not user:
                 return {
@@ -282,6 +284,9 @@ PersistentKeepalive = 25
 
             tariff_data = tariffs.get(tariff, tariffs["standard"])
             username = f"user_{user_id}"
+            
+            # Вычисляем expire timestamp (10 лет от сейчас)
+            expire_timestamp = int(time.time()) + (3650 * 86400)
 
             # Проверка, существует ли уже пользователь
             existing_user = self.marzban.get_user(username)
@@ -309,10 +314,11 @@ PersistentKeepalive = 25
                     }
 
             # Создание пользователя (бесплатно и на 10 лет)
-            result = self.marzban.create_user(
+            # Передаём expire напрямую в payload
+            result = self.marzban.create_user_with_expire(
                 username=username,
                 data_limit=tariff_data["limit"],
-                expire_days=tariff_data["days"],  # 3650 дней = 10 лет
+                expire_timestamp=expire_timestamp,
                 protocols={"vless": {}, "trojan": {}}
             )
 
@@ -325,7 +331,7 @@ PersistentKeepalive = 25
                     "subscription_url": subscription_url,
                     "username": username,
                     "data_limit": tariff_data["limit"],
-                    "expire_days": 3650  # 10 лет
+                    "expire_timestamp": expire_timestamp
                 }
             else:
                 return result
