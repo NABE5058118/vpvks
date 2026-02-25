@@ -346,11 +346,10 @@ async def tester_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Произошла ошибка при добавлении тестировщика.")
     else:
         await update.message.reply_text(
-            "🔑 <b>Добавление тестировщика</b>\n\n"
+            "🔑 Добавление тестировщика\n\n"
             "Использование: /tester <user_id>\n\n"
             "Пример: /tester 699469085\n\n"
-            "Тестировщики получают безлимитный бесплатный доступ к VPN.",
-            parse_mode='HTML'
+            "Тестировщики получают безлимитный бесплатный доступ к VPN."
         )
 
 
@@ -371,6 +370,9 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     callback_data = query.data
     user_id = update.effective_user.id
+    
+    # Import here to avoid scope issues
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
     # Обработка выбора VPN из старого меню
     if callback_data in ["vpn_v2ray", "vpn_wireguard"]:
@@ -384,7 +386,21 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Обработка нового главного меню
     if callback_data == "menu_key":
-        await get_vpn_key(update, context)
+        # Для callback query используем edit_message_text или отправляем новое сообщение
+        keyboard = [
+            [
+                InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
+                InlineKeyboardButton("🛡️ WireGuard", callback_data="vpn_wireguard"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "🔑 Выберите тип VPN подключения:\n\n"
+            "🔒 V2Ray (VLESS/Trojan) — лучше обходит блокировки\n"
+            "🛡️ WireGuard — выше скорость и стабильность\n\n"
+            "Оба протокола работают на наших серверах.",
+            reply_markup=reply_markup
+        )
         return
 
     if callback_data == "menu_app":
