@@ -125,19 +125,6 @@ services:
     volumes:
       - ./bot:/app
 
-  # ===========================================
-  # Nginx для Marzban (reverse proxy)
-  # ===========================================
-  marzban-nginx:
-    image: nginx:alpine
-    container_name: marzban_nginx
-    restart: always
-    network_mode: host
-    volumes:
-      - ./marzban_nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - marzban
-
 # ===========================================
 # Networks
 # ===========================================
