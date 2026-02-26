@@ -143,6 +143,10 @@ class MarzbanClient:
             response.raise_for_status()
             result = response.json()
             logger.info(f"User {username} created: {result}")
+            
+            # Проверяем и включаем inbound
+            self.ensure_inbounds_enabled()
+            
             return {"status": "success", "data": result}
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 409:
@@ -151,6 +155,133 @@ class MarzbanClient:
             return {"status": "error", "message": str(e)}
         except Exception as e:
             logger.error(f"Error creating Marzban user: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def ensure_inbounds_enabled(self):
+        """Проверяет и включает нужные inbound (VLESS Reality и Trojan TLS)"""
+        token = self.get_token()
+        if not token:
+            logger.error("Failed to get token for inbounds check")
+            return False
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            # Получаем список всех inbound
+            response = requests.get(
+                f"{self.base_url}/api/inbounds",
+                headers=headers,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            inbounds = response.json()
+            
+            logger.info(f"Found inbounds: {list(inbounds.keys())}")
+            
+            # Нужные inbound
+            required_inbounds = {
+                "VLESS Reality": {"port": 8443, "protocol": "vless"},
+                "Trojan TLS": {"port": 2083, "protocol": "trojan"}
+            }
+            
+            # Проверяем каждый required inbound
+            for inbound_name, inbound_info in required_inbounds.items():
+                # Ищем inbound в списке
+                found = False
+                for group, inbounds_list in inbounds.items():
+                    for inbound in inbounds_list:
+                        if inbound.get("tag") == inbound_name:
+                            found = True
+                            if not inbound.get("enabled", False):
+                                logger.warning(f"Inbound {inbound_name} is disabled! Trying to enable...")
+                                # Включаем inbound
+                                self.toggle_inbound(inbound_name, True)
+                            else:
+                                logger.info(f"Inbound {inbound_name} is already enabled")
+                            break
+                    if found:
+                        break
+                
+                if not found:
+                    logger.error(f"Inbound {inbound_name} not found in Marzban configuration!")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking inbounds: {e}")
+            return False
+
+    def toggle_inbound(self, inbound_tag: str, enable: bool) -> dict:
+        """Включает или выключает inbound
+        
+        Args:
+            inbound_tag: Название inbound (например "VLESS Reality")
+            enable: True для включения, False для выключения
+        """
+        token = self.get_token()
+        if not token:
+            return {"status": "error", "message": "Failed to get token"}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.post(
+                f"{self.base_url}/api/inbound/{inbound_tag}/toggle",
+                headers=headers,
+                json={"enabled": enable},
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"Inbound {inbound_tag} {'enabled' if enable else 'disabled'}: {result}")
+            return {"status": "success", "data": result}
+        except Exception as e:
+            logger.error(f"Error toggling inbound {inbound_tag}: {e}")
+            # Если API toggle не работает, пробуем через update
+            return self.update_inbound(inbound_tag, {"enabled": enable})
+
+    def update_inbound(self, inbound_tag: str, updates: dict) -> dict:
+        """Обновляет настройки inbound
+        
+        Args:
+            inbound_tag: Название inbound
+            updates: Словарь с обновлениями
+        """
+        token = self.get_token()
+        if not token:
+            return {"status": "error", "message": "Failed to get token"}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            # Сначала получаем текущие настройки
+            response = requests.get(
+                f"{self.base_url}/api/inbound/{inbound_tag}",
+                headers=headers,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            current_config = response.json()
+            
+            # Обновляем настройки
+            current_config.update(updates)
+            
+            # Отправляем обновлённые настройки
+            response = requests.put(
+                f"{self.base_url}/api/inbound/{inbound_tag}",
+                headers=headers,
+                json=current_config,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"Inbound {inbound_tag} updated: {result}")
+            return {"status": "success", "data": result}
+        except Exception as e:
+            logger.error(f"Error updating inbound {inbound_tag}: {e}")
             return {"status": "error", "message": str(e)}
 
     def get_subscription_url(self, username: str) -> str:
