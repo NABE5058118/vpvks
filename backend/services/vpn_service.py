@@ -257,7 +257,30 @@ PersistentKeepalive = 25
     # =========================================================
     # Marzban (V2Ray/Trojan/Reality) методы
     # =========================================================
-    
+
+    def _enable_marzban_inbounds(self):
+        """Автоматическое включение VLESS Reality и Trojan TLS через БД"""
+        try:
+            import subprocess
+            
+            # Запускаем скрипт включения inbound
+            result = subprocess.run(
+                ['python3', '/app/enable_marzban_inbounds.py'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode == 0:
+                logger.info("✅ Marzban inbounds check completed")
+                if result.stdout:
+                    logger.info(result.stdout.strip())
+            else:
+                logger.warning(f"Inbound check failed: {result.stderr}")
+                
+        except Exception as e:
+            logger.error(f"Error enabling Marzban inbounds: {e}")
+
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
         """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
@@ -284,12 +307,15 @@ PersistentKeepalive = 25
 
             tariff_data = tariffs.get(tariff, tariffs["standard"])
             username = f"user_{user_id}"
-            
+
             # Вычисляем expire дату (10 лет от сейчас) используя UTC
             expire_date = datetime.utcnow() + timedelta(days=3650)
             expire_timestamp = int(expire_date.timestamp())
-            
+
             logger.info(f"Expire date: {expire_date}, timestamp: {expire_timestamp}")
+
+            # Включаем inbound автоматически перед созданием пользователя
+            self._enable_marzban_inbounds()
 
             # Проверка, существует ли уже пользователь
             existing_user = self.marzban.get_user(username)

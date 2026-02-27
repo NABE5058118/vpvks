@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируй код
 COPY . .
 
+# Копируем скрипт включения Marzban inbound
+COPY enable_marzban_inbounds.py /app/enable_marzban_inbounds.py
+
 # Открой порт
 EXPOSE 8080
 
