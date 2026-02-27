@@ -132,17 +132,19 @@ def main():
     logger.info("=" * 50)
     
     if not ADMIN_PASSWORD:
-        logger.error("❌ MARZBAN_PASSWORD not set!")
+        logger.error("❌ SUDO_PASSWORD not set!")
+        logger.error("Check that marzban.env has SUDO_PASSWORD set")
         return
     
-    # Ждём пока Marzban запустится
-    logger.info("Waiting for Marzban to start...")
-    time.sleep(5)
+    # Ждём пока Marzban запустится (увеличенная задержка)
+    logger.info("Waiting for Marzban to start (this may take 30 seconds)...")
     
-    token = get_token()
+    # Пробуем получить токен с увеличенным временем ожидания
+    token = get_token(max_retries=15)  # 15 попыток по 2 секунды = 30 секунд
     if not token:
-        logger.error("❌ Failed to get admin token!")
+        logger.error("❌ Failed to get admin token after 30 seconds!")
         logger.error(f"Check credentials: username='{ADMIN_USERNAME}'")
+        logger.error("Marzban may still be starting up. Will retry on next restart.")
         return
     
     logger.info("✓ Admin token obtained")
