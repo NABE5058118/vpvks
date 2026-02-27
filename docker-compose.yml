@@ -20,27 +20,10 @@ services:
       - XRAY_JSON=/var/lib/marzban/xray_config.json
       - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/vpvks.ru/fullchain.pem
       - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/vpvks.ru/privkey.pem
-      # Переменные для скрипта авто-включения inbound
-      - MARZBAN_URL=https://127.0.0.1:8000
     network_mode: host
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    # Скрипт для включения inbound при старте
-    command: >
-      bash -c "
-        python3 -c \"
-        import sqlite3
-        conn = sqlite3.connect('/var/lib/marzban/db.sqlite3')
-        cursor = conn.cursor()
-        cursor.execute(\\\"UPDATE inbounds SET enabled = 1 WHERE tag IN ('VLESS Reality', 'Trojan TLS')\\\")
-        conn.commit()
-        print('Inbounds enabled:', cursor.rowcount)
-        conn.close()
-        \" || true
-        && alembic upgrade head
-        && marzban
-      "
 
   # ===========================================
   # VPN Bot Project
