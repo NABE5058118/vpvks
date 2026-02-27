@@ -21,8 +21,8 @@ logger = logging.getLogger('marzban-auto-inbound')
 
 # Настройки из переменных окружения или по умолчанию
 MARZBAN_URL = os.getenv('MARZBAN_URL', 'https://127.0.0.1:8000')
-ADMIN_USERNAME = os.getenv('MARZBAN_ADMIN', 'admin')
-ADMIN_PASSWORD = os.getenv('MARZBAN_PASSWORD', '')
+ADMIN_USERNAME = os.getenv('SUDO_USERNAME', 'admin')
+ADMIN_PASSWORD = os.getenv('SUDO_PASSWORD', '')
 
 def get_token(max_retries=5):
     """Получение токена администратора с повторными попытками"""

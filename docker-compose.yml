@@ -20,6 +20,10 @@ services:
       - XRAY_JSON=/var/lib/marzban/xray_config.json
       - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/vpvks.ru/fullchain.pem
       - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/vpvks.ru/privkey.pem
+      # Переменные для скрипта авто-включения inbound
+      - MARZBAN_URL=https://127.0.0.1:8000
+      - MARZBAN_ADMIN=admin
+      - MARZBAN_PASSWORD=j8X0EcIllDwPK
     network_mode: host
     volumes:
       - /var/lib/marzban:/var/lib/marzban
