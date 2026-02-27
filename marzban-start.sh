@@ -8,13 +8,12 @@ DB_PATH="/var/lib/marzban/db.sqlite3"
 
 if [ ! -f "$DB_PATH" ]; then
     echo "⚠️ Database not found, skipping inbound enable"
-    exit 0
+else
+    # В Marzban нет колонки enabled - inbound управляются через JSON config
+    # Просто проверяем что БД существует
+    echo "✅ Database exists, Marzban will manage inbounds"
 fi
 
-# Включаем inbound через SQLite
-sqlite3 "$DB_PATH" "UPDATE inbounds SET enabled = 1 WHERE tag IN ('VLESS Reality', 'Trojan TLS');"
-
-echo "✅ Inbounds enabled!"
-
-# Запускаем Marzban
-exec marzban
+# Запускаем Marzban через uvicorn (стандартный способ)
+cd /var/lib/marzban
+exec uvicorn marzban:app --host 0.0.0.0 --port 8000 --loop uvloop
