@@ -1,6 +1,6 @@
 """
 VPN Key Handler
-Обработчики для получения ключей VPN (WireGuard и V2Ray/Marzban)
+Обработчики для получения ключей VPN (V2Ray/Marzban)
 """
 
 import asyncio
@@ -15,22 +15,20 @@ logger = logging.getLogger(__name__)
 
 
 async def get_vpn_key(update: Update, context):
-    """Получение ключа VPN (WireGuard или V2Ray)"""
+    """Получение ключа VPN (V2Ray)"""
     user_id = update.effective_user.id
 
     keyboard = [
         [
             InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
-            InlineKeyboardButton("🛡️ WireGuard", callback_data="vpn_wireguard"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
         "🔑 Выберите тип VPN подключения:\n\n"
-        "🔒 V2Ray (VLESS/Trojan) — лучше обходит блокировки\n"
-        "🛡️ WireGuard — выше скорость и стабильность\n\n"
-        "Оба протокола работают на наших серверах.",
+        "🔒 V2Ray (VLESS/Trojan) — лучше обходит блокировки\n\n"
+        "Протокол работает на наших серверах.",
         reply_markup=reply_markup
     )
 
@@ -86,19 +84,6 @@ async def handle_vpn_selection(update: Update, context):
                     else:
                         await query.edit_message_text(f"❌ Ошибка сервера (код: {response.status})")
 
-            elif vpn_type == "vpn_wireguard":
-                async with session.get(f"{BACKEND_URL}/api/wireguard/qr/{user_id}") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        config_text = data.get('config_text', '')
-                        await query.edit_message_text(
-                            f"✅ Ваш ключ WireGuard готов!\n\n"
-                            f"🔑 Конфигурация:\n{config_text}\n\n"
-                            f"📱 Скачайте WireGuard и импортируйте конфиг"
-                        )
-                    else:
-                        await query.edit_message_text("❌ Ошибка получения конфига")
-
     except Exception as e:
         logger.error(f"Error in handle_vpn_selection: {e}")
         await query.edit_message_text(
@@ -114,7 +99,6 @@ async def renew_vpn_key(update: Update, context):
     keyboard = [
         [
             InlineKeyboardButton("🔒 V2Ray", callback_data="renew_v2ray"),
-            InlineKeyboardButton("🛡️ WireGuard", callback_data="renew_wireguard"),
         ],
         [
             InlineKeyboardButton("❌ Отмена", callback_data="renew_cancel"),
@@ -170,12 +154,6 @@ async def handle_renew_selection(update: Update, context):
                                 await query.edit_message_text(f"❌ Ошибка: {data.get('message')}")
                         else:
                             await query.edit_message_text(f"❌ Ошибка сервера")
-
-            elif action == "renew_wireguard":
-                await query.edit_message_text(
-                    "⚠️ Перевыпуск WireGuard временно недоступен.\n"
-                    "Обратитесь в поддержку."
-                )
 
     except Exception as e:
         logger.error(f"Error in handle_renew_selection: {e}")

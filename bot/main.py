@@ -106,7 +106,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - главное меню\n"
         "/help - эта справка\n"
         "/status - проверить статус VPN-подключения\n"
-        "/key - получить ключ VPN (V2Ray/WireGuard)\n"
+        "/key - получить ключ VPN (V2Ray)\n"
         "/connect - подключиться к VPN\n"
         "/disconnect - отключиться от VPN\n"
         "/payment - управление подпиской и оплата\n"
@@ -336,12 +336,12 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
     # Обработка выбора VPN
-    if callback_data in ["vpn_v2ray", "vpn_wireguard"]:
+    if callback_data == "vpn_v2ray":
         await handle_vpn_selection(update, context)
         return
 
     # Обработка перевыпуска VPN
-    if callback_data in ["renew_v2ray", "renew_wireguard", "renew_cancel"]:
+    if callback_data in ["renew_v2ray", "renew_cancel"]:
         await handle_renew_selection(update, context)
         return
 
