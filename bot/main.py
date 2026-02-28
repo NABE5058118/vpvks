@@ -3,7 +3,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-from config import BOT_TOKEN, BACKEND_URL
+from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL
 
 # Настройка логирования
 logging.basicConfig(
@@ -21,7 +21,7 @@ from handlers.vpn_key_handler import get_vpn_key, handle_vpn_selection, renew_vp
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /start command - register user and show menu"""
+    """Handle the /start command - register user and show menu with Mini App"""
     user_id = update.effective_user.id
 
     if not validate_user_id(user_id):
@@ -58,7 +58,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         timeout = aiohttp.ClientTimeout(total=10, connect=5)
         connector = aiohttp.TCPConnector(ssl=False)
-        
+
         async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
             async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
                 if response.status == 200:
@@ -67,31 +67,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error getting balance: {e}")
 
-    # Create inline keyboard
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    
+    # Create inline keyboard with Mini App button
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
     keyboard = [
         [
-            InlineKeyboardButton("📱 Mini App", callback_data="menu_app"),
+            InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
             InlineKeyboardButton("🔑 Мои ключи", callback_data="menu_keys"),
         ]
     ]
-    
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Welcome message
     username_display = f"@{username}" if username else first_name or "Пользователь"
-    
+
     welcome_message = (
         f"👋 Привет, {username_display}!\n\n"
         f"🆔 ID: <code>{user_id}</code>\n"
         f"💰 Баланс: {balance} ₽\n\n"
-        "Управляй подпиской через меню 👇"
+        "🎉 Все ключи бесплатные и бессрочные!\n\n"
+        "Нажми кнопку ниже чтобы открыть приложение 👇"
     )
-    
+
     await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='HTML')
 
 
@@ -341,17 +342,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_renew_selection(update, context)
         return
 
-    # Обработка нового главного меню
-    if callback_data == "menu_app":
-        from config import MINI_APP_URL
-        keyboard = [[InlineKeyboardButton("📱 Открыть VPN приложение", web_app={"url": MINI_APP_URL})]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "📱 Mini App\n\nНажмите кнопку ниже, чтобы открыть приложение:",
-            reply_markup=reply_markup
-        )
-        return
-
     if callback_data == "menu_balance":
         # Get balance from backend
         balance = 0
@@ -372,24 +362,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
             f"ID: {user_id}\n"
             f"Баланс: {balance} ₽\n\n"
             f"⚠️ Сейчас все ключи бесплатные. Платежи будут добавлены позже."
-        )
-        return
-
-    if callback_data == "menu_keys":
-        # Show keys menu
-        keyboard = [
-            [
-                InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
-                InlineKeyboardButton("🛡️ WireGuard", callback_data="vpn_wireguard"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "🔑 Выбор протокола\n\n"
-            "🔒 V2Ray — лучше обходит блокировки\n"
-            "🛡️ WireGuard — выше скорость\n\n"
-            "Выберите протокол:",
-            reply_markup=reply_markup
         )
         return
 

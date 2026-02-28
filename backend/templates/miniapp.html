@@ -470,7 +470,6 @@
         <div class="app-header">
             <div class="app-title">
                 <h1 style="background: linear-gradient(135deg, #00aaff, #0066ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">VPVKS</h1>
-                <div class="app-tagline">Private • Fast • Secure</div>
             </div>
             <div class="user-info">
                 <div class="username-display" id="username-display">Загрузка...</div>
@@ -507,32 +506,17 @@
                 </button>
             </div>
 
-            <div class="glass-panel">
-                <div class="section-title">🌍 Сервер</div>
-                <div class="location-card active">
-                    <div class="location-flag">🇩🇪</div>
-                    <div class="location-info">
-                        <div class="location-name">Germany (Stockholm)</div>
-                        <div class="location-ip">IP: 23.134.216.190</div>
-                    </div>
-                    <div class="location-check">✓</div>
-                </div>
-                <div style="font-size: 12px; color: #888; margin-top: 10px; text-align: center;">
-                    🚀 Протоколы: VLESS Reality + Trojan TLS
-                </div>
-            </div>
-
             <div class="warning-box" style="display: none;" id="balance-warning">
                 <div class="warning-icon">⚠️</div>
                 <div class="warning-text">Баланс заканчивается! Пополните счёт, чтобы подписка не отключилась.</div>
             </div>
 
             <div class="button-group">
-                <button class="btn btn-secondary" onclick="switchScreen('keys-screen')">
-                    <span>🔑</span> Мои ключи
+                <button class="btn btn-primary" onclick="switchScreen('keys-screen')">
+                    <span>🔑</span> Получить ключ
                 </button>
-                <button class="btn btn-primary" onclick="switchScreen('tariff-screen')">
-                    <span>💳</span> Поддержка
+                <button class="btn btn-secondary" onclick="switchScreen('tariff-screen')">
+                    <span>💜</span> Поддержка
                 </button>
             </div>
         </div>
@@ -540,17 +524,10 @@
         <!-- Экран: Ключи подключения -->
         <div class="screen" id="keys-screen">
             <div class="glass-panel">
-                <div class="section-title">🔑 Ключи подключения</div>
-                <div class="text-center mb-20" style="color: #aaa;">Выберите протокол для подключения</div>
-
-                <!-- Выбор протокола -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button class="btn btn-primary" id="btn-v2ray" onclick="selectProtocol('v2ray')" style="flex: 1;">
-                        🚀 V2Ray
-                    </button>
-                    <button class="btn btn-secondary" id="btn-wireguard" onclick="selectProtocol('wireguard')" style="flex: 1;">
-                        🛡️ WireGuard
-                    </button>
+                <div class="section-title">🔑 Ключ V2Ray</div>
+                <div class="text-center mb-20" style="color: #aaa;">
+                    VLESS Reality + Trojan TLS<br>
+                    Лучшее решение для обхода блокировок
                 </div>
 
                 <!-- Статус подключения -->
@@ -560,14 +537,11 @@
                             <div class="status-dot" id="vpn-status-dot" style="background: #666; box-shadow: 0 0 10px #666;"></div>
                             <span id="vpn-status-text" style="font-size: 14px; font-weight: 600;">Не подключено</span>
                         </div>
-                        <button class="btn btn-primary" id="vpn-toggle-btn" onclick="toggleVpn()" style="padding: 10px 20px; font-size: 13px;">
-                            Подключить
-                        </button>
                     </div>
                 </div>
 
                 <!-- V2Ray секция -->
-                <div id="v2ray-section" style="display: none;">
+                <div id="v2ray-section">
                     <div class="qrcode-container">
                         <div id="v2ray-qrcode-image" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
                             <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">
@@ -592,7 +566,7 @@
 
                     <div class="divider"></div>
 
-                    <div class="section-title">📱 Инструкция V2Ray</div>
+                    <div class="section-title">📱 Инструкция</div>
                     <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #00eeff;">1.</strong> Скачайте v2rayNG (Android) или V2Box (iOS)
@@ -611,57 +585,6 @@
                     <div class="text-center" style="font-size: 12px; color: #888; margin: 20px 0 10px;">
                         Приложения: <strong style="color: #fff;">v2rayNG</strong> (Android), <strong style="color: #fff;">V2Box</strong> (iOS), <strong style="color: #fff;">Hiddify</strong> (Все платформы)
                     </div>
-                </div>
-
-                <!-- WireGuard секция -->
-                <div id="wireguard-section" style="display: none;">
-                    <div class="qrcode-container">
-                        <div id="wireguard-qrcode-image" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                            <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">
-                                Нажмите "Получить ключ"
-                            </div>
-                        </div>
-
-                        <button class="btn btn-primary" onclick="loadWireGuardConfig()" style="margin-bottom: 15px; width: 100%;">
-                            <span>🔑</span> Получить ключ WireGuard
-                        </button>
-
-                        <div class="button-group" style="flex-direction: column; width: 100%;">
-                            <button class="btn btn-secondary" onclick="downloadConfig()">
-                                <span>⬇️</span> Скачать конфиг (.conf)
-                            </button>
-                            <button class="btn btn-secondary" onclick="copyConfigToClipboard()">
-                                <span>📋</span> Копировать конфиг
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="divider"></div>
-
-                    <div class="section-title">📱 Инструкция WireGuard</div>
-                    <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #00eeff;">1.</strong> Скачайте приложение WireGuard
-                        </div>
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #00eeff;">2.</strong> Отсканируйте QR-код или импортируйте конфиг
-                        </div>
-                        <div style="margin-bottom: 10px;">
-                            <strong style="color: #00eeff;">3.</strong> Нажмите "Подключить" для активации VPN
-                        </div>
-                        <div>
-                            <strong style="color: #00eeff;">4.</strong> Готово! Вы защищены 🔒
-                        </div>
-                    </div>
-
-                    <div class="text-center" style="font-size: 12px; color: #888; margin: 20px 0 10px;">
-                        Приложения: <strong style="color: #fff;">WireGuard</strong> (iOS/Android/PC)
-                    </div>
-                </div>
-
-                <!-- Общий статус -->
-                <div id="protocol-message" style="text-align: center; color: #888; font-size: 13px; margin-top: 20px;">
-                    👆 Выберите протокол выше для начала
                 </div>
             </div>
         </div>
@@ -730,10 +653,6 @@
             <a href="#" class="nav-item active" onclick="switchScreen('main-screen'); return false;">
                 <div class="nav-icon">🏠</div>
                 <div>Главная</div>
-            </a>
-            <a href="#" class="nav-item" onclick="switchScreen('keys-screen'); return false;">
-                <div class="nav-icon">🔑</div>
-                <div>Ключи</div>
             </a>
             <a href="#" class="nav-item" onclick="switchScreen('tariff-screen'); return false;">
                 <div class="nav-icon">💜</div>
@@ -822,36 +741,9 @@
                 }
             });
 
-            // Если открыли экран ключей - показываем сообщение
+            // Если открыли экран ключей - сразу загружаем V2Ray
             if (screenId === 'keys-screen') {
-                document.getElementById('protocol-message').style.display = 'block';
-            }
-        }
-
-        // Выбор протокола
-        function selectProtocol(protocol) {
-            const v2raySection = document.getElementById('v2ray-section');
-            const wireguardSection = document.getElementById('wireguard-section');
-            const btnV2ray = document.getElementById('btn-v2ray');
-            const btnWireguard = document.getElementById('btn-wireguard');
-            const message = document.getElementById('protocol-message');
-
-            message.style.display = 'none';
-
-            if (protocol === 'v2ray') {
-                v2raySection.style.display = 'block';
-                wireguardSection.style.display = 'none';
-                btnV2ray.classList.remove('btn-secondary');
-                btnV2ray.classList.add('btn-primary');
-                btnWireguard.classList.remove('btn-primary');
-                btnWireguard.classList.add('btn-secondary');
-            } else {
-                wireguardSection.style.display = 'block';
-                v2raySection.style.display = 'none';
-                btnWireguard.classList.remove('btn-secondary');
-                btnWireguard.classList.add('btn-primary');
-                btnV2ray.classList.remove('btn-primary');
-                btnV2ray.classList.add('btn-secondary');
+                // Можно автоматически показать инструкцию
             }
         }
 
@@ -1088,273 +980,6 @@
 
         // Обновляем данные каждые 30 секунд
         setInterval(loadUserData, 30000);
-
-        // ========== WireGuard функции ==========
-
-        // Глобальная переменная для хранения конфига
-        let wireGuardConfigText = '';
-
-        // Загрузка конфигурации WireGuard
-        async function loadWireGuardConfig() {
-            try {
-                const userId = tg.initDataUnsafe?.user?.id || '699469085';
-                const qrcodeContainer = document.getElementById('wireguard-qrcode-image');
-
-                console.log('[WG] Loading config for user:', userId);
-                qrcodeContainer.innerHTML = '<div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">Загрузка...</div>';
-
-                // Запрашиваем конфигурацию с сервера
-                const apiUrl = window.location.origin + `/api/wireguard/qr/${userId}`;
-                console.log('[WG] Fetching from:', apiUrl);
-
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                });
-
-                console.log('[WG] Response status:', response.status);
-                console.log('[WG] Response headers:', response.headers.get('content-type'));
-
-                // Проверяем Content-Type
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    console.error('[WG] Wrong content-type:', contentType);
-                    // Пытаемся прочитать как текст
-                    const text = await response.text();
-                    console.error('[WG] Response text:', text.substring(0, 500));
-                    throw new Error('Сервер вернул не JSON. Проверьте логи.');
-                }
-
-                const data = await response.json();
-                console.log('[WG] Response data:', data);
-
-                if (data.status === 'success') {
-                    wireGuardConfigText = data.config_text;
-                    console.log('[WG] Config text loaded, length:', wireGuardConfigText?.length);
-
-                    // Генерируем QR-код из конфига
-                    qrcodeContainer.innerHTML = '';
-
-                    // Проверяем что библиотека QRCode загружена
-                    if (typeof QRCode === 'undefined') {
-                        console.error('[WG] QRCode library not loaded!');
-                        if (typeof window.QRCode !== 'undefined') {
-                            console.log('[WG] Found QRCode in window.QRCode');
-                        } else {
-                            throw new Error('Библиотека QRCode не загружена');
-                        }
-                    }
-
-                    // Создаём div для QR-кода
-                    const qrDiv = document.createElement('div');
-                    qrDiv.id = 'wireguard-qrcode-canvas';
-                    qrcodeContainer.appendChild(qrDiv);
-
-                    // Генерируем QR-код используя QRCode.js
-                    try {
-                        new QRCode(qrDiv, {
-                            text: wireGuardConfigText,
-                            width: 200,
-                            height: 200,
-                            colorDark: '#000000',
-                            colorLight: '#ffffff',
-                            correctLevel: QRCode.CorrectLevel.M
-                        });
-                        console.log('[WG] QR code generated successfully');
-                        
-                        // Обновляем кнопку
-                        const btn = event.target;
-                        btn.innerHTML = '<span>✅</span> Ключ получен!';
-                        btn.classList.remove('btn-primary');
-                        btn.classList.add('btn-secondary');
-                    } catch (qrError) {
-                        console.error('[WG] QR generation error:', qrError);
-                        throw new Error('Ошибка генерации QR: ' + qrError.message);
-                    }
-
-                    // Обновляем статус подключения
-                    loadWireGuardStatus();
-                } else {
-                    console.error('[WG] API error:', data.error);
-                    qrcodeContainer.innerHTML = '<div style="color: #ff6b6b; font-size: 13px; text-align: center;">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
-                }
-            } catch (error) {
-                console.error('[WG] Network error:', error);
-                console.error('[WG] Error stack:', error.stack);
-                document.getElementById('wireguard-qrcode-image').innerHTML = '<div style="color: #ff6b6b; font-size: 13px; text-align: center;">Ошибка:<br><small>' + (error.message || error) + '</small></div>';
-            }
-        }
-
-        // Загрузка статуса подключения WireGuard
-        async function loadWireGuardStatus() {
-            try {
-                const userId = tg.initDataUnsafe?.user?.id || '699469085';
-                const response = await fetch(`/api/wireguard/status/${userId}`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    updateVpnStatusUI(data);
-                }
-            } catch (error) {
-                console.error('Error loading WireGuard status:', error);
-            }
-        }
-
-        // Обновление UI статуса VPN
-        function updateVpnStatusUI(data) {
-            const statusDot = document.getElementById('vpn-status-dot');
-            const statusText = document.getElementById('vpn-status-text');
-            const toggleBtn = document.getElementById('vpn-toggle-btn');
-            
-            const hasConfig = data.has_config;
-            const isActive = data.connection_info?.is_active || false;
-            const lastConnected = data.connection_info?.last_connected;
-            
-            if (hasConfig && isActive) {
-                // Подключено
-                statusDot.style.background = '#00ff64';
-                statusDot.style.boxShadow = '0 0 10px #00ff64';
-                statusText.textContent = 'Подключено';
-                toggleBtn.textContent = 'Отключить';
-                toggleBtn.classList.remove('btn-primary');
-                toggleBtn.classList.add('btn-secondary');
-            } else if (hasConfig) {
-                // Конфиг есть, но не подключено
-                statusDot.style.background = '#ffaa00';
-                statusDot.style.boxShadow = '0 0 10px #ffaa00';
-                statusText.textContent = 'Готов к подключению';
-                toggleBtn.textContent = 'Подключить';
-                toggleBtn.classList.remove('btn-secondary');
-                toggleBtn.classList.add('btn-primary');
-            } else {
-                // Конфига нет
-                statusDot.style.background = '#666';
-                statusDot.style.boxShadow = '0 0 10px #666';
-                statusText.textContent = 'Не подключено';
-                toggleBtn.textContent = 'Получить конфиг';
-                toggleBtn.classList.remove('btn-secondary');
-                toggleBtn.classList.add('btn-primary');
-            }
-        }
-
-        // Переключение VPN (Подключить/Отключить)
-        async function toggleVpn() {
-            try {
-                const userId = tg.initDataUnsafe?.user?.id || '699469085';
-                const toggleBtn = document.getElementById('vpn-toggle-btn');
-                
-                // Показываем состояние загрузки
-                toggleBtn.disabled = true;
-                toggleBtn.textContent = 'Загрузка...';
-                
-                // Запрашиваем текущий статус
-                const statusResponse = await fetch(`/api/wireguard/status/${userId}`);
-                const statusData = await statusResponse.json();
-                
-                if (statusData.has_config && statusData.connection_info?.is_active) {
-                    // Отключаем
-                    const response = await fetch('/api/vpn/disconnect', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: userId })
-                    });
-                    
-                    if (response.ok) {
-                        tg.showAlert('VPN отключен');
-                    }
-                } else if (statusData.has_config) {
-                    // Подключаем
-                    const response = await fetch('/api/vpn/connect', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: userId })
-                    });
-                    
-                    if (response.ok) {
-                        tg.showAlert('VPN подключен! Теперь вы защищены.');
-                    }
-                } else {
-                    // Конфига нет - предлагаем получить
-                    tg.showAlert('Сначала получите конфигурацию WireGuard');
-                    await loadWireGuardConfig();
-                }
-                
-                // Обновляем статус
-                await loadWireGuardStatus();
-                toggleBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('Error toggling VPN:', error);
-                tg.showAlert('Ошибка при переключении VPN');
-            }
-        }
-
-        // Скачивание конфига
-        function downloadConfig() {
-            if (!wireGuardConfigText) {
-                if (tg.showAlert) {
-                    tg.showAlert('Сначала загрузите конфигурацию WireGuard');
-                } else {
-                    alert('Сначала загрузите конфигурацию');
-                }
-                return;
-            }
-
-            const userId = tg.initDataUnsafe?.user?.id || '699469085';
-
-            // Создаём blob с правильным MIME типом для WireGuard
-            const blob = new Blob([wireGuardConfigText], {
-                type: 'text/plain;charset=utf-8'
-            });
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `wg_config_${userId}.conf`;
-
-            document.body.appendChild(a);
-            a.click();
-
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-
-            if (tg.showNotification) {
-                tg.showNotification({ type: 'success', message: 'Конфиг скачан!' });
-            } else {
-                alert('✅ Конфиг скачан!');
-            }
-        }
-
-        // Копирование конфига в буфер
-        async function copyConfigToClipboard() {
-            if (!wireGuardConfigText) {
-                if (tg.showAlert) {
-                    tg.showAlert('Сначала загрузите конфигурацию');
-                } else {
-                    alert('Сначала загрузите конфигурацию');
-                }
-                return;
-            }
-
-            try {
-                await navigator.clipboard.writeText(wireGuardConfigText);
-                if (tg.showNotification) {
-                    tg.showNotification({ type: 'success', message: 'Конфиг скопирован!' });
-                } else {
-                    alert('✅ Конфиг скопирован!');
-                }
-            } catch (error) {
-                if (tg.showAlert) {
-                    tg.showAlert('Ошибка: ' + error.message);
-                } else {
-                    alert('Ошибка: ' + error.message);
-                }
-            }
-        }
     </script>
 </body>
 </html>
