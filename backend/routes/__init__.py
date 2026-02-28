@@ -795,7 +795,6 @@ def marzban_webhook():
 def sync_marzban_endpoint():
     """Endpoint для ручной синхронизации Marzban → PostgreSQL"""
     try:
-        from services.vpn_service import vpn_service
         from database.db_config import db
         from database.models.user_model import User as UserModel
         from datetime import datetime
@@ -807,7 +806,7 @@ def sync_marzban_endpoint():
         for user in users:
             username = f"user_{user.id}"
             
-            # Проверить в Marzban
+            # Проверить в Marzban через vpn_service (экземпляр)
             marzban_user = vpn_service.marzban.get_user(username)
             
             if marzban_user.get('status') == 'success':
