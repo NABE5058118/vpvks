@@ -494,15 +494,15 @@
                     <span id="status-text">Загрузка...</span>
                 </div>
                 <div class="info-line">
-                    <div>💰 Доступ:</div>
+                    <div>Доступ:</div>
                     <div><strong id="expiry-date">Бесплатно / Бессрочно</strong></div>
                 </div>
                 <div class="info-line">
-                    <div>📅 Истекает:</div>
+                    <div>Истекает:</div>
                     <div><strong id="expire-date-display">Никогда</strong></div>
                 </div>
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;" onclick="loadUserData()">
-                    <span>🔄</span> Обновить статус
+                    <span></span> Обновить статус
                 </button>
             </div>
 
@@ -984,22 +984,7 @@
         window.Telegram.WebApp.setBackgroundColor('#0a0a0a');
 
         // Загружаем данные пользователя при загрузке
-        window.addEventListener('load', () => {
-            loadUserData();
-            
-            // Проверяем есть ли параметр start=keys в URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const startScreen = urlParams.get('start');
-            if (startScreen === 'keys') {
-                // Открываем экран ключей через 500мс после загрузки
-                setTimeout(() => {
-                    switchScreen('keys-screen');
-                    // Обновляем активную навигацию
-                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                    document.querySelectorAll('.nav-item')[1].classList.add('active');
-                }, 500);
-            }
-        });
+        window.addEventListener('load', loadUserData);
 
         // Обновляем данные каждые 30 секунд
         setInterval(loadUserData, 30000);

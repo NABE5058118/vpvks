@@ -75,9 +75,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
-            InlineKeyboardButton("🔑 Получить ключ", web_app=WebAppInfo(url=f"{MINI_APP_URL}?start=keys")),
-        ],
-        [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
             InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
         ]
