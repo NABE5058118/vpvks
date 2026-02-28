@@ -387,52 +387,28 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 async def sync_marzban_with_db(context):
     """
     Периодическая синхронизация Marzban → PostgreSQL
-    Запускается каждые 5 минут
+    Запускается каждые 5 минут через backend API
     """
     try:
-        logger.info("🔄 Запуск синхронизации Marzban → PostgreSQL...")
+        import aiohttp
         
-        # Импорты через sys.path для работы из bot контейнера
-        import sys
-        sys.path.insert(0, '/app/backend')
+        backend_url = "http://vpn_backend:8080"
         
-        from database.models.user_model import User as UserModel
-        from database.db_config import db
-        from services.vpn_service import vpn_service
-        from datetime import datetime
-        
-        # Получить всех пользователей из БД
-        users = UserModel.query.all()
-        
-        updated = 0
-        for user in users:
-            username = f"user_{user.id}"
-            
-            # Проверить в Marzban
-            marzban_user = vpn_service.marzban.get_user(username)
-            
-            if marzban_user.get('status') == 'success':
-                user_data = marzban_user.get('data', {})
-                expire_timestamp = user_data.get('expire')
-                
-                # Обновить если отличается
-                if expire_timestamp and expire_timestamp > 0:
-                    new_date = datetime.fromtimestamp(expire_timestamp)
-                    if user.subscription_end_date != new_date:
-                        user.subscription_end_date = new_date
-                        db.session.commit()
-                        updated += 1
-                        logger.info(f"🔄 Синхронизировано: {username} → {new_date}")
-        
-        if updated > 0:
-            logger.info(f"✅ Синхронизация завершена: обновлено {updated} пользователей")
-        else:
-            logger.debug("✅ Синхронизация завершена: изменений нет")
+        async with aiohttp.ClientSession() as session:
+            # Вызвать backend API для синхронизации
+            async with session.post(f"{backend_url}/api/sync/marzban") as response:
+                if response.status == 200:
+                    result = await response.json()
+                    updated = result.get('updated', 0)
+                    if updated > 0:
+                        logger.info(f"✅ Синхронизация: обновлено {updated} пользователей")
+                    else:
+                        logger.debug("ℹ️ Синхронизация: изменений нет")
+                else:
+                    logger.error(f"❌ Ошибка синхронизации: {response.status}")
         
     except Exception as e:
-        logger.error(f"❌ Ошибка синхронизации: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.debug(f"ℹ️ Синхронизация: {e}")
 
 
 def main():

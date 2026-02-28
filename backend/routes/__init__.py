@@ -791,6 +791,50 @@ def marzban_webhook():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@routes_bp.route('/api/sync/marzban', methods=['POST'])
+def sync_marzban_endpoint():
+    """Endpoint для ручной синхронизации Marzban → PostgreSQL"""
+    try:
+        from services.vpn_service import vpn_service
+        from database.db_config import db
+        from database.models.user_model import User as UserModel
+        from datetime import datetime
+        
+        # Получить всех пользователей из БД
+        users = UserModel.query.all()
+        
+        updated = 0
+        for user in users:
+            username = f"user_{user.id}"
+            
+            # Проверить в Marzban
+            marzban_user = vpn_service.marzban.get_user(username)
+            
+            if marzban_user.get('status') == 'success':
+                user_data = marzban_user.get('data', {})
+                expire_timestamp = user_data.get('expire')
+                
+                # Обновить если отличается
+                if expire_timestamp and expire_timestamp > 0:
+                    new_date = datetime.fromtimestamp(expire_timestamp)
+                    if user.subscription_end_date != new_date:
+                        user.subscription_end_date = new_date
+                        updated += 1
+                        logger.info(f"🔄 Синхронизировано: {username} → {new_date}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'updated': updated,
+            'message': f'Синхронизировано {updated} пользователей'
+        })
+    
+    except Exception as e:
+        logger.error(f"Error in sync_marzban_endpoint: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @routes_bp.route('/api/vpn/choose', methods=['GET'])
 def choose_vpn_type():
     """Выбор типа VPN (WireGuard или V2Ray)"""
