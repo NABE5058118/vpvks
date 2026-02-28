@@ -328,7 +328,7 @@ PersistentKeepalive = 25
                 if subscription_url:
                     # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL для существующего пользователя
                     from database.db_config import db
-                    from models.user import User as UserModel
+                    from database.models.user_model import User as UserModel
                     from datetime import datetime
                     
                     user = UserModel.query.filter_by(id=user_id).first()
@@ -352,7 +352,7 @@ PersistentKeepalive = 25
                     
                     # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL после продления
                     from database.db_config import db
-                    from models.user import User as UserModel
+                    from database.models.user_model import User as UserModel
                     from datetime import datetime
                     
                     user = UserModel.query.filter_by(id=user_id).first()
@@ -384,7 +384,7 @@ PersistentKeepalive = 25
 
                 # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL
                 from database.db_config import db
-                from models.user import User as UserModel
+                from database.models.user_model import User as UserModel
                 from datetime import datetime
 
                 # Находим пользователя в PostgreSQL и обновляем дату окончания подписки
