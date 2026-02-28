@@ -512,10 +512,7 @@
             </div>
 
             <div class="button-group">
-                <button class="btn btn-primary" onclick="switchScreen('keys-screen')">
-                    <span>🔑</span> Получить ключ
-                </button>
-                <button class="btn btn-secondary" onclick="switchScreen('tariff-screen')">
+                <button class="btn btn-primary" onclick="switchScreen('tariff-screen')">
                     <span>💜</span> Поддержка
                 </button>
             </div>
@@ -646,6 +643,10 @@
             <a href="#" class="nav-item active" onclick="switchScreen('main-screen'); return false;">
                 <div class="nav-icon">🏠</div>
                 <div>Главная</div>
+            </a>
+            <a href="#" class="nav-item" onclick="switchScreen('keys-screen'); return false;">
+                <div class="nav-icon">🔑</div>
+                <div>Ключи</div>
             </a>
             <a href="#" class="nav-item" onclick="switchScreen('tariff-screen'); return false;">
                 <div class="nav-icon">💜</div>
@@ -1027,8 +1028,19 @@
         // Загружаем данные пользователя при загрузке
         window.addEventListener('load', () => {
             loadUserData();
-            // Автоматически открываем экран ключей при загрузке
-            switchScreen('keys-screen');
+            
+            // Проверяем есть ли параметр start=keys в URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const startScreen = urlParams.get('start');
+            if (startScreen === 'keys') {
+                // Открываем экран ключей через 500мс после загрузки
+                setTimeout(() => {
+                    switchScreen('keys-screen');
+                    // Обновляем активную навигацию
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    document.querySelectorAll('.nav-item')[1].classList.add('active');
+                }, 500);
+            }
         });
 
         // Обновляем данные каждые 30 секунд
