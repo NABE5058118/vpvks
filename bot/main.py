@@ -392,17 +392,17 @@ async def sync_marzban_with_db(context):
     try:
         logger.info("🔄 Запуск синхронизации Marzban → PostgreSQL...")
         
-        # Импортируем модели
+        # Импорты через sys.path для работы из bot контейнера
         import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from backend.models.user import User as UserModel
-        from backend.services.vpn_service import vpn_service
-        from backend.database.db_config import db
+        sys.path.insert(0, '/app/backend')
+        
+        from database.models.user_model import User as UserModel
+        from database.db_config import db
+        from services.vpn_service import vpn_service
         from datetime import datetime
         
         # Получить всех пользователей из БД
-        users = UserModel.get_all_users()
+        users = UserModel.query.all()
         
         updated = 0
         for user in users:
@@ -431,6 +431,8 @@ async def sync_marzban_with_db(context):
         
     except Exception as e:
         logger.error(f"❌ Ошибка синхронизации: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 
 def main():
