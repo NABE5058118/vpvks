@@ -481,22 +481,26 @@
         <!-- Screen: Main (Personal Account) -->
         <div class="screen active" id="main-screen">
             <div class="glass-panel">
-                <div class="section-title">Личный кабинет</div>
+                <div class="section-title">👤 Личный кабинет</div>
                 <div class="info-line user-id-container">
-                    <div class="user-id-header">ID:</div>
+                    <div class="user-id-header">Telegram ID:</div>
                     <div class="user-id" id="user-id">Загрузка...</div>
                 </div>
             </div>
 
             <div class="glass-panel">
-                <div class="section-title">Статус</div>
+                <div class="section-title">📊 Статус подписки</div>
                 <div class="status-badge mb-20">
                     <span class="status-dot"></span>
                     <span id="status-text">Загрузка...</span>
                 </div>
                 <div class="info-line">
-                    <div>Тариф:</div>
+                    <div>💰 Доступ:</div>
                     <div><strong id="expiry-date">Бесплатно / Бессрочно</strong></div>
+                </div>
+                <div class="info-line">
+                    <div>📅 Истекает:</div>
+                    <div><strong id="expire-date-display">Никогда</strong></div>
                 </div>
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;" onclick="loadUserData()">
                     <span>🔄</span> Обновить статус
@@ -504,22 +508,17 @@
             </div>
 
             <div class="glass-panel">
-                <div class="section-title">Локация</div>
+                <div class="section-title">🌍 Сервер</div>
                 <div class="location-card active">
                     <div class="location-flag">🇩🇪</div>
                     <div class="location-info">
-                        <div class="location-name">Germany</div>
-                        <div class="location-ip">IP: 77.110.99.69</div>
+                        <div class="location-name">Germany (Stockholm)</div>
+                        <div class="location-ip">IP: 23.134.216.190</div>
                     </div>
                     <div class="location-check">✓</div>
                 </div>
-                <div class="location-card">
-                    <div class="location-flag">🇺🇸</div>
-                    <div class="location-info">
-                        <div class="location-name">USA</div>
-                        <div class="location-ip">IP: 104.200.150.10</div>
-                    </div>
-                    <div class="location-check">✓</div>
+                <div style="font-size: 12px; color: #888; margin-top: 10px; text-align: center;">
+                    🚀 Протоколы: VLESS Reality + Trojan TLS
                 </div>
             </div>
 
@@ -530,10 +529,10 @@
 
             <div class="button-group">
                 <button class="btn btn-secondary" onclick="switchScreen('keys-screen')">
-                    <span>🔑</span> Ключи
+                    <span>🔑</span> Мои ключи
                 </button>
                 <button class="btn btn-primary" onclick="switchScreen('tariff-screen')">
-                    <span></span> Пополнить
+                    <span>💳</span> Поддержка
                 </button>
             </div>
         </div>
@@ -541,8 +540,18 @@
         <!-- Экран: Ключи подключения -->
         <div class="screen" id="keys-screen">
             <div class="glass-panel">
-                <div class="section-title">Подключение VPN</div>
-                <div class="text-center mb-20" style="color: #aaa;">Сканируйте QR для быстрого подключения</div>
+                <div class="section-title">🔑 Ключи подключения</div>
+                <div class="text-center mb-20" style="color: #aaa;">Выберите протокол для подключения</div>
+
+                <!-- Выбор протокола -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" id="btn-v2ray" onclick="selectProtocol('v2ray')" style="flex: 1;">
+                        🚀 V2Ray
+                    </button>
+                    <button class="btn btn-secondary" id="btn-wireguard" onclick="selectProtocol('wireguard')" style="flex: 1;">
+                        🛡️ WireGuard
+                    </button>
+                </div>
 
                 <!-- Статус подключения -->
                 <div class="glass-panel" style="margin: 15px 0; padding: 15px;">
@@ -557,53 +566,102 @@
                     </div>
                 </div>
 
-                <!-- QR-код -->
-                <div class="qrcode-container">
-                    <div id="qrcode-image" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                        <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">
-                            Загрузка QR...
+                <!-- V2Ray секция -->
+                <div id="v2ray-section" style="display: none;">
+                    <div class="qrcode-container">
+                        <div id="v2ray-qrcode-image" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">
+                                Нажмите "Получить ключ"
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="getV2RayKey()" style="margin-bottom: 15px; width: 100%;">
+                            <span>🔑</span> Получить ключ V2Ray
+                        </button>
+
+                        <div id="v2ray-subscription-container" style="display: none; width: 100%;">
+                            <div class="key-link" id="v2ray-subscription-link">
+                                <span id="v2ray-link-text">Загрузка...</span>
+                                <button class="copy-btn" onclick="copyV2RayLink()">📋</button>
+                            </div>
+                            <button class="btn btn-secondary" onclick="copyV2RayLink()" style="margin-top: 10px; width: 100%;">
+                                📋 Копировать ссылку
+                            </button>
                         </div>
                     </div>
-                    
-                    <button class="btn btn-secondary" onclick="loadWireGuardConfig()" style="margin-bottom: 15px;">
-                        <span>🔄</span> Обновить QR-код
-                    </button>
-                </div>
 
-                <!-- Кнопки действий -->
-                <div class="button-group" style="flex-direction: column;">
-                    <button class="btn btn-primary" onclick="downloadConfig()">
-                        <span>⬇️</span> Скачать конфиг (.conf)
-                    </button>
-                    <button class="btn btn-secondary" onclick="copyConfigToClipboard()">
-                        <span>📋</span> Копировать конфиг
-                    </button>
-                    <button class="btn btn-secondary" onclick="copyConfigLink()">
-                        <span>🔗</span> Копировать ссылку
-                    </button>
-                </div>
+                    <div class="divider"></div>
 
-                <div class="divider"></div>
+                    <div class="section-title">📱 Инструкция V2Ray</div>
+                    <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">1.</strong> Скачайте v2rayNG (Android) или V2Box (iOS)
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">2.</strong> Нажмите "Добавить подписку"
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">3.</strong> Вставьте скопированную ссылку
+                        </div>
+                        <div>
+                            <strong style="color: #00eeff;">4.</strong> Подключитесь и пользуйтесь! ✅
+                        </div>
+                    </div>
 
-                <!-- Инструкция -->
-                <div class="section-title">Инструкция</div>
-                <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
-                    <div style="margin-bottom: 10px;">
-                        <strong style="color: #00eeff;">1.</strong> Скачайте приложение WireGuard
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong style="color: #00eeff;">2.</strong> Отсканируйте QR-код или импортируйте конфиг
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <strong style="color: #00eeff;">3.</strong> Нажмите "Подключить" для активации VPN
-                    </div>
-                    <div>
-                        <strong style="color: #00eeff;">4.</strong> Готово! Вы защищены 🔒
+                    <div class="text-center" style="font-size: 12px; color: #888; margin: 20px 0 10px;">
+                        Приложения: <strong style="color: #fff;">v2rayNG</strong> (Android), <strong style="color: #fff;">V2Box</strong> (iOS), <strong style="color: #fff;">Hiddify</strong> (Все платформы)
                     </div>
                 </div>
 
-                <div class="text-center" style="font-size: 12px; color: #888; margin: 20px 0 10px;">
-                    Приложения: <strong style="color: #fff;">WireGuard</strong> (iOS/Android)
+                <!-- WireGuard секция -->
+                <div id="wireguard-section" style="display: none;">
+                    <div class="qrcode-container">
+                        <div id="wireguard-qrcode-image" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">
+                                Нажмите "Получить ключ"
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="loadWireGuardConfig()" style="margin-bottom: 15px; width: 100%;">
+                            <span>🔑</span> Получить ключ WireGuard
+                        </button>
+
+                        <div class="button-group" style="flex-direction: column; width: 100%;">
+                            <button class="btn btn-secondary" onclick="downloadConfig()">
+                                <span>⬇️</span> Скачать конфиг (.conf)
+                            </button>
+                            <button class="btn btn-secondary" onclick="copyConfigToClipboard()">
+                                <span>📋</span> Копировать конфиг
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="section-title">📱 Инструкция WireGuard</div>
+                    <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">1.</strong> Скачайте приложение WireGuard
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">2.</strong> Отсканируйте QR-код или импортируйте конфиг
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #00eeff;">3.</strong> Нажмите "Подключить" для активации VPN
+                        </div>
+                        <div>
+                            <strong style="color: #00eeff;">4.</strong> Готово! Вы защищены 🔒
+                        </div>
+                    </div>
+
+                    <div class="text-center" style="font-size: 12px; color: #888; margin: 20px 0 10px;">
+                        Приложения: <strong style="color: #fff;">WireGuard</strong> (iOS/Android/PC)
+                    </div>
+                </div>
+
+                <!-- Общий статус -->
+                <div id="protocol-message" style="text-align: center; color: #888; font-size: 13px; margin-top: 20px;">
+                    👆 Выберите протокол выше для начала
                 </div>
             </div>
         </div>
@@ -611,54 +669,75 @@
         <!-- Экран: Тарифы -->
         <div class="screen" id="tariff-screen">
             <div class="glass-panel">
-                <div class="section-title">Тарифы подписки</div>
-                <div class="text-center mb-20" style="color: #aaa;">Оплата через Юкассу</div>
-                
+                <div class="section-title">💳 Поддержка проекта</div>
+                <div class="text-center mb-20" style="color: #aaa;">
+                    🎉 Все ключи бесплатные и бессрочные!<br>
+                    Но вы можете поддержать проект 💜
+                </div>
+
+                <div style="background: linear-gradient(135deg, rgba(0, 100, 255, 0.15), rgba(0, 200, 255, 0.1)); border-radius: 20px; padding: 20px; border: 1px solid rgba(0, 238, 255, 0.3); margin-bottom: 20px;">
+                    <div style="font-size: 18px; font-weight: 700; color: #00eeff; margin-bottom: 10px;">
+                        ✨ Бесплатный доступ
+                    </div>
+                    <ul style="font-size: 14px; color: #aaa; line-height: 1.8; padding-left: 20px;">
+                        <li>🔑 Безлимитные VPN ключи</li>
+                        <li>🚀 Протоколы VLESS + Trojan</li>
+                        <li>🛡️ WireGuard для скорости</li>
+                        <li>🌍 Сервер в Стокгольме</li>
+                        <li>♾️ Бессрочный доступ</li>
+                    </ul>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-title">☕ Поддержать разработчика</div>
+                <div class="text-center mb-20" style="color: #aaa; font-size: 13px;">
+                    Проект существует благодаря вашей поддержке
+                </div>
+
                 <div class="tariff-grid">
                     <div class="tariff-card">
-                        <div class="tariff-name">1 месяц</div>
-                        <div class="tariff-desc">30 дней подписки</div>
-                        <div class="tariff-price">110 ₽</div>
-                        <button class="buy-btn" onclick="purchasePlan('month')">Купить</button>
+                        <div class="tariff-name">☕ Чашка кофе</div>
+                        <div class="tariff-desc">Поддержать проект</div>
+                        <div class="tariff-price">99 ₽</div>
+                        <button class="buy-btn" onclick="initiateTopUp(1, 99)">Поддержать</button>
                     </div>
                     <div class="tariff-card popular">
-                        <div class="tariff-name">4 месяца</div>
-                        <div class="tariff-desc">120 дней подписки</div>
-                        <div class="tariff-price">290 ₽</div>
-                        <button class="buy-btn" onclick="purchasePlan('4months')">Купить</button>
+                        <div class="tariff-name">🍕 Пицца</div>
+                        <div class="tariff-desc">Благодарность команде</div>
+                        <div class="tariff-price">299 ₽</div>
+                        <button class="buy-btn" onclick="initiateTopUp(3, 299)">Поддержать</button>
                     </div>
                     <div class="tariff-card">
-                        <div class="tariff-name">12 месяцев</div>
-                        <div class="tariff-desc">365 дней подписки (выгодная цена)</div>
-                        <div class="tariff-price">500 ₽</div>
-                        <button class="buy-btn" onclick="purchasePlan('12months')">Купить</button>
+                        <div class="tariff-name">🚀 Месяц сервера</div>
+                        <div class="tariff-desc">Помощь в развитии</div>
+                        <div class="tariff-price">599 ₽</div>
+                        <button class="buy-btn" onclick="initiateTopUp(6, 599)">Поддержать</button>
                     </div>
                 </div>
 
                 <div class="divider"></div>
 
-                <div class="section-title">Промокод</div>
-                
-                <div class="promo-container">
-                    <input type="text" class="promo-input" placeholder="Введите код" id="promo-code">
-                    <button class="promo-btn" onclick="applyPromo()">OK</button>
+                <div style="font-size: 12px; color: #888; text-align: center; line-height: 1.6;">
+                    💜 Спасибо за вашу поддержку!<br>
+                    Все средства идут на оплату серверов и развитие проекта
                 </div>
             </div>
         </div>
 
         <!-- Нижняя навигация -->
         <div class="bottom-nav">
-            <a href="#" class="nav-item active" onclick="switchScreen('main-screen')">
+            <a href="#" class="nav-item active" onclick="switchScreen('main-screen'); return false;">
                 <div class="nav-icon">🏠</div>
                 <div>Главная</div>
             </a>
-            <a href="#" class="nav-item" onclick="switchScreen('keys-screen')">
+            <a href="#" class="nav-item" onclick="switchScreen('keys-screen'); return false;">
                 <div class="nav-icon">🔑</div>
                 <div>Ключи</div>
             </a>
-            <a href="#" class="nav-item" onclick="switchScreen('tariff-screen')">
-                <div class="nav-icon">💳</div>
-                <div>Подписка</div>
+            <a href="#" class="nav-item" onclick="switchScreen('tariff-screen'); return false;">
+                <div class="nav-icon">💜</div>
+                <div>Поддержка</div>
             </a>
         </div>
     </div>
@@ -694,14 +773,34 @@
                         // Теперь все ключи бесплатные и бессрочные!
                         document.getElementById('status-text').textContent = '✅ Активно';
                         document.getElementById('expiry-date').textContent = 'Бесплатно / Бессрочно';
+                        
+                        // Обновляем дату истечения если есть
+                        const subscription = statusData.subscription;
+                        if (subscription && subscription.expires_at) {
+                            const expireDate = new Date(subscription.expires_at);
+                            const now = new Date();
+                            const daysLeft = Math.floor((expireDate - now) / (1000 * 60 * 60 * 24));
+                            
+                            if (daysLeft > 3650) {
+                                document.getElementById('expire-date-display').textContent = 'Никогда (бессрочно)';
+                            } else if (daysLeft > 0) {
+                                document.getElementById('expire-date-display').textContent = `Через ${daysLeft} дн.`;
+                            } else {
+                                document.getElementById('expire-date-display').textContent = 'Истекло';
+                            }
+                        } else {
+                            document.getElementById('expire-date-display').textContent = 'Никогда';
+                        }
                     } else {
                         document.getElementById('status-text').textContent = '⚠️ Не активно';
-                        document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Мои ключи"';
+                        document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Ключи"';
+                        document.getElementById('expire-date-display').textContent = '—';
                     }
                 } else {
                     console.error('Failed to fetch status:', statusResponse.statusText);
                     document.getElementById('status-text').textContent = '⚠️ Ошибка';
-                    document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Мои ключи"';
+                    document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Ключи"';
+                    document.getElementById('expire-date-display').textContent = '—';
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -712,9 +811,9 @@
         function switchScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
+
             document.getElementById(screenId).classList.add('active');
-            
+
             // Находим соответствующий элемент навигации и делаем его активным
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => {
@@ -722,6 +821,124 @@
                     item.classList.add('active');
                 }
             });
+
+            // Если открыли экран ключей - показываем сообщение
+            if (screenId === 'keys-screen') {
+                document.getElementById('protocol-message').style.display = 'block';
+            }
+        }
+
+        // Выбор протокола
+        function selectProtocol(protocol) {
+            const v2raySection = document.getElementById('v2ray-section');
+            const wireguardSection = document.getElementById('wireguard-section');
+            const btnV2ray = document.getElementById('btn-v2ray');
+            const btnWireguard = document.getElementById('btn-wireguard');
+            const message = document.getElementById('protocol-message');
+
+            message.style.display = 'none';
+
+            if (protocol === 'v2ray') {
+                v2raySection.style.display = 'block';
+                wireguardSection.style.display = 'none';
+                btnV2ray.classList.remove('btn-secondary');
+                btnV2ray.classList.add('btn-primary');
+                btnWireguard.classList.remove('btn-primary');
+                btnWireguard.classList.add('btn-secondary');
+            } else {
+                wireguardSection.style.display = 'block';
+                v2raySection.style.display = 'none';
+                btnWireguard.classList.remove('btn-secondary');
+                btnWireguard.classList.add('btn-primary');
+                btnV2ray.classList.remove('btn-primary');
+                btnV2ray.classList.add('btn-secondary');
+            }
+        }
+
+        // Получение V2Ray ключа
+        async function getV2RayKey() {
+            try {
+                const userId = tg.initDataUnsafe?.user?.id || '699469085';
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> Генерация...';
+
+                const response = await fetch('/api/marzban/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, tariff: 'standard' })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success' && data.subscription_url) {
+                    // Показываем ссылку
+                    const container = document.getElementById('v2ray-subscription-container');
+                    const linkText = document.getElementById('v2ray-link-text');
+                    
+                    linkText.textContent = data.subscription_url;
+                    container.style.display = 'block';
+                    
+                    // Генерируем QR код
+                    const qrContainer = document.getElementById('v2ray-qrcode-image');
+                    qrContainer.innerHTML = '';
+                    
+                    const qrDiv = document.createElement('div');
+                    qrDiv.id = 'v2ray-qrcode';
+                    qrContainer.appendChild(qrDiv);
+                    
+                    new QRCode(qrDiv, {
+                        text: data.subscription_url,
+                        width: 200,
+                        height: 200,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+
+                    btn.innerHTML = '<span>✅</span> Ключ получен!';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                    
+                    if (tg.showNotification) {
+                        tg.showNotification({ type: 'success', message: 'Ключ V2Ray получен!' });
+                    }
+                } else {
+                    throw new Error(data.message || 'Ошибка получения ключа');
+                }
+            } catch (error) {
+                console.error('Error getting V2Ray key:', error);
+                if (tg.showAlert) {
+                    tg.showAlert('Ошибка: ' + error.message);
+                } else {
+                    alert('Ошибка: ' + error.message);
+                }
+                event.target.disabled = false;
+                event.target.innerHTML = '<span>🔑</span> Получить ключ V2Ray';
+            }
+        }
+
+        // Копирование V2Ray ссылки
+        async function copyV2RayLink() {
+            const linkText = document.getElementById('v2ray-link-text');
+            const subscriptionUrl = linkText.textContent.trim();
+
+            try {
+                await navigator.clipboard.writeText(subscriptionUrl);
+                if (tg.showNotification) {
+                    tg.showNotification({ type: 'success', message: 'Ссылка скопирована!' });
+                } else {
+                    alert('✅ Ссылка скопирована!');
+                }
+            } catch (error) {
+                if (tg.showAlert) {
+                    tg.showAlert('Ошибка копирования: ' + error.message);
+                } else {
+                    alert('Ошибка: ' + error.message);
+                }
+            }
         }
 
         // Копирование текста
@@ -873,7 +1090,7 @@
         setInterval(loadUserData, 30000);
 
         // ========== WireGuard функции ==========
-        
+
         // Глобальная переменная для хранения конфига
         let wireGuardConfigText = '';
 
@@ -881,25 +1098,25 @@
         async function loadWireGuardConfig() {
             try {
                 const userId = tg.initDataUnsafe?.user?.id || '699469085';
-                const qrcodeContainer = document.getElementById('qrcode-image');
-                
+                const qrcodeContainer = document.getElementById('wireguard-qrcode-image');
+
                 console.log('[WG] Loading config for user:', userId);
                 qrcodeContainer.innerHTML = '<div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; text-align: center;">Загрузка...</div>';
-                
+
                 // Запрашиваем конфигурацию с сервера
                 const apiUrl = window.location.origin + `/api/wireguard/qr/${userId}`;
                 console.log('[WG] Fetching from:', apiUrl);
-                
+
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                     },
                 });
-                
+
                 console.log('[WG] Response status:', response.status);
                 console.log('[WG] Response headers:', response.headers.get('content-type'));
-                
+
                 // Проверяем Content-Type
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
@@ -909,33 +1126,32 @@
                     console.error('[WG] Response text:', text.substring(0, 500));
                     throw new Error('Сервер вернул не JSON. Проверьте логи.');
                 }
-                
+
                 const data = await response.json();
                 console.log('[WG] Response data:', data);
-                
+
                 if (data.status === 'success') {
                     wireGuardConfigText = data.config_text;
                     console.log('[WG] Config text loaded, length:', wireGuardConfigText?.length);
-                    
+
                     // Генерируем QR-код из конфига
                     qrcodeContainer.innerHTML = '';
-                    
+
                     // Проверяем что библиотека QRCode загружена
                     if (typeof QRCode === 'undefined') {
                         console.error('[WG] QRCode library not loaded!');
-                        // Пробуем альтернативное имя глобальной переменной
                         if (typeof window.QRCode !== 'undefined') {
                             console.log('[WG] Found QRCode in window.QRCode');
                         } else {
                             throw new Error('Библиотека QRCode не загружена');
                         }
                     }
-                    
+
                     // Создаём div для QR-кода
                     const qrDiv = document.createElement('div');
-                    qrDiv.id = 'qrcode-canvas';
+                    qrDiv.id = 'wireguard-qrcode-canvas';
                     qrcodeContainer.appendChild(qrDiv);
-                    
+
                     // Генерируем QR-код используя QRCode.js
                     try {
                         new QRCode(qrDiv, {
@@ -947,11 +1163,17 @@
                             correctLevel: QRCode.CorrectLevel.M
                         });
                         console.log('[WG] QR code generated successfully');
+                        
+                        // Обновляем кнопку
+                        const btn = event.target;
+                        btn.innerHTML = '<span>✅</span> Ключ получен!';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-secondary');
                     } catch (qrError) {
                         console.error('[WG] QR generation error:', qrError);
                         throw new Error('Ошибка генерации QR: ' + qrError.message);
                     }
-                    
+
                     // Обновляем статус подключения
                     loadWireGuardStatus();
                 } else {
@@ -961,7 +1183,7 @@
             } catch (error) {
                 console.error('[WG] Network error:', error);
                 console.error('[WG] Error stack:', error.stack);
-                document.getElementById('qrcode-image').innerHTML = '<div style="color: #ff6b6b; font-size: 13px; text-align: center;">Ошибка:<br><small>' + (error.message || error) + '</small></div>';
+                document.getElementById('wireguard-qrcode-image').innerHTML = '<div style="color: #ff6b6b; font-size: 13px; text-align: center;">Ошибка:<br><small>' + (error.message || error) + '</small></div>';
             }
         }
 
@@ -1072,63 +1294,49 @@
         // Скачивание конфига
         function downloadConfig() {
             if (!wireGuardConfigText) {
-                tg.showAlert('Сначала загрузите конфигурацию');
+                if (tg.showAlert) {
+                    tg.showAlert('Сначала загрузите конфигурацию WireGuard');
+                } else {
+                    alert('Сначала загрузите конфигурацию');
+                }
                 return;
             }
 
             const userId = tg.initDataUnsafe?.user?.id || '699469085';
-            
+
             // Создаём blob с правильным MIME типом для WireGuard
-            const blob = new Blob([wireGuardConfigText], { 
-                type: 'text/plain;charset=utf-8' 
+            const blob = new Blob([wireGuardConfigText], {
+                type: 'text/plain;charset=utf-8'
             });
-            
+
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `wg_config_${userId}.conf`;  // Явное расширение .conf
-            
-            // Создаём невидимый элемент и кликаем
+            a.download = `wg_config_${userId}.conf`;
+
             document.body.appendChild(a);
             a.click();
-            
-            // Чищаем
+
             setTimeout(() => {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
             }, 100);
 
-            // Показываем уведомление
             if (tg.showNotification) {
                 tg.showNotification({ type: 'success', message: 'Конфиг скачан!' });
             } else {
-                alert('✅ Конфиг скачан! Файл: wg_config_' + userId + '.conf');
-            }
-        }
-
-        // Копирование ссылки на конфиг
-        async function copyConfigLink() {
-            const userId = tg.initDataUnsafe?.user?.id || '699469085';
-            const configUrl = window.location.origin + '/api/wireguard/config/' + userId;
-
-            try {
-                await navigator.clipboard.writeText(configUrl);
-                // Показываем уведомление (tg.showNotification недоступен в некоторых версиях)
-                if (tg.showNotification) {
-                    tg.showNotification({ type: 'success', message: 'Ссылка скопирована!' });
-                } else {
-                    // Fallback: используем alert
-                    alert('✅ Ссылка скопирована!');
-                }
-            } catch (error) {
-                tg.showAlert('Ошибка копирования: ' + error.message);
+                alert('✅ Конфиг скачан!');
             }
         }
 
         // Копирование конфига в буфер
         async function copyConfigToClipboard() {
             if (!wireGuardConfigText) {
-                tg.showAlert('Сначала загрузите конфигурацию');
+                if (tg.showAlert) {
+                    tg.showAlert('Сначала загрузите конфигурацию');
+                } else {
+                    alert('Сначала загрузите конфигурацию');
+                }
                 return;
             }
 
@@ -1137,22 +1345,16 @@
                 if (tg.showNotification) {
                     tg.showNotification({ type: 'success', message: 'Конфиг скопирован!' });
                 } else {
-                    alert('✅ Конфиг скопирован в буфер обмена!\nТеперь вставь его в файл .conf');
+                    alert('✅ Конфиг скопирован!');
                 }
             } catch (error) {
-                tg.showAlert('Ошибка копирования: ' + error.message);
+                if (tg.showAlert) {
+                    tg.showAlert('Ошибка: ' + error.message);
+                } else {
+                    alert('Ошибка: ' + error.message);
+                }
             }
         }
-
-        // Переключение на экран ключей при загрузке
-        const originalSwitchScreen = switchScreen;
-        switchScreen = function(screenId) {
-            originalSwitchScreen(screenId);
-            if (screenId === 'keys-screen') {
-                // Загружаем конфиг при переходе на экран ключей
-                loadWireGuardConfig();
-            }
-        };
     </script>
 </body>
 </html>
