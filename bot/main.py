@@ -75,8 +75,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
+            InlineKeyboardButton("🔑 Получить ключ", web_app=WebAppInfo(url=MINI_APP_URL)),
+        ],
+        [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
-            InlineKeyboardButton("🔑 Мои ключи", callback_data="menu_keys"),
+            InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
         ]
     ]
 
@@ -348,7 +351,7 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         try:
             timeout = aiohttp.ClientTimeout(total=10, connect=5)
             connector = aiohttp.TCPConnector(ssl=False)
-            
+
             async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
                 async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
                     if response.status == 200:
@@ -356,12 +359,21 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
                         balance = data.get('balance', 0)
         except Exception as e:
             logger.error(f"Error getting balance: {e}")
-        
+
         await query.edit_message_text(
             f"💰 Ваш баланс\n\n"
             f"ID: {user_id}\n"
             f"Баланс: {balance} ₽\n\n"
-            f"⚠️ Сейчас все ключи бесплатные. Платежи будут добавлены позже."
+            f"🎉 Все ключи бесплатные и бессрочные!\n"
+            f"💜 Вы можете поддержать проект в Mini App"
+        )
+        return
+
+    if callback_data == "menu_tariff":
+        await query.edit_message_text(
+            f"💜 Поддержка проекта\n\n"
+            f"🎉 Все ключи бесплатные и бессрочные!\n\n"
+            f"Откройте Mini App чтобы поддержать проект 👇"
         )
         return
 

@@ -530,16 +530,6 @@
                     Лучшее решение для обхода блокировок
                 </div>
 
-                <!-- Статус подключения -->
-                <div class="glass-panel" style="margin: 15px 0; padding: 15px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="status-dot" id="vpn-status-dot" style="background: #666; box-shadow: 0 0 10px #666;"></div>
-                            <span id="vpn-status-text" style="font-size: 14px; font-weight: 600;">Не подключено</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- V2Ray секция -->
                 <div id="v2ray-section">
                     <div class="qrcode-container">
@@ -561,6 +551,9 @@
                             <button class="btn btn-secondary" onclick="copyV2RayLink()" style="margin-top: 10px; width: 100%;">
                                 📋 Копировать ссылку
                             </button>
+                            <button class="btn btn-secondary" onclick="openInBrowser()" style="margin-top: 10px; width: 100%;">
+                                🌐 Открыть в браузере
+                            </button>
                         </div>
                     </div>
 
@@ -569,15 +562,15 @@
                     <div class="section-title">📱 Инструкция</div>
                     <div style="font-size: 13px; color: #aaa; line-height: 1.6;">
                         <div style="margin-bottom: 10px;">
-                            <strong style="color: #00eeff;">1.</strong> Скачайте v2rayNG (Android) или V2Box (iOS)
+                            <strong style="color: #00eeff;">1.</strong> Скачайте v2rayNG (Android), V2Box (iOS) или Hiddify (все платформы)
                         </div>
                         <div style="margin-bottom: 10px;">
-                            <strong style="color: #00eeff;">2.</strong> Нажмите "Добавить подписку"
+                            <strong style="color: #00eeff;">2.</strong> Нажмите "Добавить подписку" или "Import from URL"
                         </div>
                         <div style="margin-bottom: 10px;">
                             <strong style="color: #00eeff;">3.</strong> Вставьте скопированную ссылку
                         </div>
-                        <div>
+                        <div style="margin-bottom: 10px;">
                             <strong style="color: #00eeff;">4.</strong> Подключитесь и пользуйтесь! ✅
                         </div>
                     </div>
@@ -604,10 +597,10 @@
                     </div>
                     <ul style="font-size: 14px; color: #aaa; line-height: 1.8; padding-left: 20px;">
                         <li>🔑 Безлимитные VPN ключи</li>
-                        <li>🚀 Протоколы VLESS + Trojan</li>
-                        <li>🛡️ WireGuard для скорости</li>
-                        <li>🌍 Сервер в Стокгольме</li>
+                        <li>🚀 Протоколы VLESS Reality + Trojan TLS</li>
+                        <li>🌍 Сервер в Стокгольме (Швеция)</li>
                         <li>♾️ Бессрочный доступ</li>
+                        <li>🔒 Обход блокировок</li>
                     </ul>
                 </div>
 
@@ -747,7 +740,7 @@
             }
         }
 
-        // Получение V2Ray ключа
+        // Получение V2Ray ключа из Marzban
         async function getV2RayKey() {
             try {
                 const userId = tg.initDataUnsafe?.user?.id || '699469085';
@@ -755,8 +748,9 @@
                 const originalText = btn.innerHTML;
 
                 btn.disabled = true;
-                btn.innerHTML = '<span>⏳</span> Генерация...';
+                btn.innerHTML = '<span>⏳</span> Генерация ключа...';
 
+                // Запрашиваем создание пользователя в Marzban
                 const response = await fetch('/api/marzban/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -764,16 +758,22 @@
                 });
 
                 const data = await response.json();
+                console.log('Marzban response:', data);
 
                 if (data.status === 'success' && data.subscription_url) {
                     // Показываем ссылку
                     const container = document.getElementById('v2ray-subscription-container');
                     const linkText = document.getElementById('v2ray-link-text');
                     
-                    linkText.textContent = data.subscription_url;
+                    // Полная ссылка для подписки
+                    const fullUrl = data.subscription_url.startsWith('http') 
+                        ? data.subscription_url 
+                        : window.location.origin + data.subscription_url;
+                    
+                    linkText.textContent = fullUrl;
                     container.style.display = 'block';
                     
-                    // Генерируем QR код
+                    // Генерируем QR код из полной ссылки
                     const qrContainer = document.getElementById('v2ray-qrcode-image');
                     qrContainer.innerHTML = '';
                     
@@ -782,7 +782,7 @@
                     qrContainer.appendChild(qrDiv);
                     
                     new QRCode(qrDiv, {
-                        text: data.subscription_url,
+                        text: fullUrl,
                         width: 200,
                         height: 200,
                         colorDark: '#000000',
@@ -796,6 +796,43 @@
                     
                     if (tg.showNotification) {
                         tg.showNotification({ type: 'success', message: 'Ключ V2Ray получен!' });
+                    }
+                } else if (data.message && data.message.includes('Existing user')) {
+                    // Пользователь уже существует - получаем ссылку
+                    const subscriptionResponse = await fetch(`/api/marzban/subscription/${userId}`);
+                    const subData = await subscriptionResponse.json();
+                    
+                    if (subData.status === 'success' && subData.subscription_url) {
+                        const container = document.getElementById('v2ray-subscription-container');
+                        const linkText = document.getElementById('v2ray-link-text');
+                        
+                        const fullUrl = subData.subscription_url.startsWith('http') 
+                            ? subData.subscription_url 
+                            : window.location.origin + subData.subscription_url;
+                        
+                        linkText.textContent = fullUrl;
+                        container.style.display = 'block';
+                        
+                        // Генерируем QR код
+                        const qrContainer = document.getElementById('v2ray-qrcode-image');
+                        qrContainer.innerHTML = '';
+                        
+                        const qrDiv = document.createElement('div');
+                        qrDiv.id = 'v2ray-qrcode';
+                        qrContainer.appendChild(qrDiv);
+                        
+                        new QRCode(qrDiv, {
+                            text: fullUrl,
+                            width: 200,
+                            height: 200,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                        
+                        btn.innerHTML = '<span>✅</span> Ваш ключ готов!';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-secondary');
                     }
                 } else {
                     throw new Error(data.message || 'Ошибка получения ключа');
@@ -826,10 +863,22 @@
                 }
             } catch (error) {
                 if (tg.showAlert) {
-                    tg.showAlert('Ошибка копирования: ' + error.message);
+                    tg.showAlert('Ошибка: ' + error.message);
                 } else {
                     alert('Ошибка: ' + error.message);
                 }
+            }
+        }
+
+        // Открытие ссылки в браузере
+        function openInBrowser() {
+            const linkText = document.getElementById('v2ray-link-text');
+            const subscriptionUrl = linkText.textContent.trim();
+            
+            if (tg.openLink) {
+                tg.openLink(subscriptionUrl);
+            } else {
+                window.open(subscriptionUrl, '_blank');
             }
         }
 
@@ -976,7 +1025,13 @@
         window.Telegram.WebApp.setBackgroundColor('#0a0a0a');
 
         // Загружаем данные пользователя при загрузке
-        window.addEventListener('load', loadUserData);
+        window.addEventListener('load', () => {
+            loadUserData();
+            // Автоматически открываем экран ключей при загрузке
+            setTimeout(() => {
+                switchScreen('keys-screen');
+            }, 500);
+        });
 
         // Обновляем данные каждые 30 секунд
         setInterval(loadUserData, 30000);
