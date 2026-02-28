@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
@@ -417,7 +417,7 @@ def main():
         # Ежедневная проверка подписок в 10:00
         application.job_queue.run_daily(
             send_expiration_reminder,
-            time=datetime.time(10, 0),  # 10:00 утра
+            time=time(10, 0),  # 10:00 утра
             name="expiration_reminder"
         )
         logger.info("✅ JobQueue настроен: уведомления об истечении в 10:00")
