@@ -384,6 +384,55 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     await query.edit_message_text(text="⚠️ Функция в разработке.")
 
 
+async def sync_marzban_with_db(context):
+    """
+    Периодическая синхронизация Marzban → PostgreSQL
+    Запускается каждые 5 минут
+    """
+    try:
+        logger.info("🔄 Запуск синхронизации Marzban → PostgreSQL...")
+        
+        # Импортируем модели
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from backend.models.user import User as UserModel
+        from backend.services.vpn_service import vpn_service
+        from backend.database.db_config import db
+        from datetime import datetime
+        
+        # Получить всех пользователей из БД
+        users = UserModel.get_all_users()
+        
+        updated = 0
+        for user in users:
+            username = f"user_{user.id}"
+            
+            # Проверить в Marzban
+            marzban_user = vpn_service.marzban.get_user(username)
+            
+            if marzban_user.get('status') == 'success':
+                user_data = marzban_user.get('data', {})
+                expire_timestamp = user_data.get('expire')
+                
+                # Обновить если отличается
+                if expire_timestamp and expire_timestamp > 0:
+                    new_date = datetime.fromtimestamp(expire_timestamp)
+                    if user.subscription_end_date != new_date:
+                        user.subscription_end_date = new_date
+                        db.session.commit()
+                        updated += 1
+                        logger.info(f"🔄 Синхронизировано: {username} → {new_date}")
+        
+        if updated > 0:
+            logger.info(f"✅ Синхронизация завершена: обновлено {updated} пользователей")
+        else:
+            logger.debug("✅ Синхронизация завершена: изменений нет")
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка синхронизации: {e}")
+
+
 def main():
     """Start the bot"""
     logger.info("Initializing VPN Bot...")
@@ -421,6 +470,15 @@ def main():
             name="expiration_reminder"
         )
         logger.info("✅ JobQueue настроен: уведомления об истечении в 10:00")
+        
+        # Синхронизация Marzban → PostgreSQL каждые 5 минут
+        application.job_queue.run_repeating(
+            sync_marzban_with_db,
+            interval=300,  # 300 секунд = 5 минут
+            first=60,      # Первый запуск через 60 секунд после старта
+            name="marzban_sync"
+        )
+        logger.info("✅ JobQueue настроен: синхронизация Marzban каждые 5 минут")
 
         # Start the bot
         logger.info("Starting VPN Bot polling...")

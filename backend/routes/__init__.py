@@ -745,6 +745,52 @@ def extend_marzban_user_route(user_id):
         return jsonify({'error': str(e)}), 500
 
 
+@routes_bp.route('/api/marzban/webhook', methods=['POST'])
+def marzban_webhook():
+    """Webhook для синхронизации изменений из Marzban"""
+    try:
+        data = request.get_json()
+        
+        # Тип события (user_created, user_updated, user_deleted)
+        event_type = data.get('event_type', 'user_updated')
+        username = data.get('username')
+        
+        if not username or not username.startswith('user_'):
+            return jsonify({'status': 'ignored'})
+        
+        user_id = int(username.replace('user_', ''))
+        
+        # Получаем актуальные данные из Marzban
+        from services.vpn_service import vpn_service
+        marzban_user = vpn_service.marzban.get_user(username)
+        
+        if marzban_user.get('status') == 'success':
+            user_data = marzban_user.get('data', {})
+            expire_timestamp = user_data.get('expire')
+            
+            # Обновляем в PostgreSQL
+            from database.db_config import db
+            from database.models.user_model import User as UserModel
+            
+            user = UserModel.query.filter_by(id=user_id).first()
+            if user:
+                if expire_timestamp and expire_timestamp > 0:
+                    user.subscription_end_date = datetime.fromtimestamp(expire_timestamp)
+                else:
+                    user.subscription_end_date = None
+                
+                db.session.commit()
+                logger.info(f"✅ Синхронизировано из Marzban: {username}")
+            else:
+                logger.warning(f"⏭️ Пользователь не найден в БД: {username}")
+        
+        return jsonify({'status': 'success'})
+    
+    except Exception as e:
+        logger.error(f"Error in marzban_webhook: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @routes_bp.route('/api/vpn/choose', methods=['GET'])
 def choose_vpn_type():
     """Выбор типа VPN (WireGuard или V2Ray)"""
