@@ -4,7 +4,7 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, JobQueue
 
-from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_USER_IDS
+from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS
 
 # Настройка логирования
 logging.basicConfig(
