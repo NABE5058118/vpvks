@@ -354,6 +354,19 @@ PersistentKeepalive = 25
             if result.get("status") == "success":
                 subscription_url = self.marzban.get_subscription_url(username)
 
+                # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL
+                from database.db_config import db
+                from models.user import User as UserModel
+                from datetime import datetime
+
+                # Находим пользователя в PostgreSQL и обновляем дату окончания подписки
+                user = UserModel.query.filter_by(id=user_id).first()
+                if user:
+                    # Конвертируем timestamp → datetime и обновляем БД
+                    user.subscription_end_date = datetime.fromtimestamp(expire_timestamp)
+                    db.session.commit()
+                    logger.info(f"✅ Синхронизировано subscription_end_date для user_{user_id}: {user.subscription_end_date}")
+
                 return {
                     "status": "success",
                     "protocol": "v2ray",

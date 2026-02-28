@@ -877,11 +877,18 @@ def create_marzban_user_route():
         data = request.get_json()
         user_id = data.get('user_id')
         tariff = data.get('tariff', 'standard')
-        
+
         if not user_id:
             return jsonify({'error': 'user_id is required'}), 400
-        
+
+        logger.info(f"🔧 Создание Marzban пользователя: user_id={user_id}, tariff={tariff}")
         result = vpn_service.create_marzban_user(user_id, tariff)
+        
+        if result.get("status") == "success":
+            logger.info(f"✅ Успешно создано: {result.get('username')}")
+        else:
+            logger.warning(f"⚠️ Ошибка: {result.get('message')}")
+        
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error in create_marzban_user_route: {e}")
