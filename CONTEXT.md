@@ -17,7 +17,6 @@
 | **Marzban** | ✅ | Запущен, пользователи создаются |
 | **VLESS Reality** | ✅ | Порт 8443, SNI: www.microsoft.com |
 | **Trojan TLS** | ✅ | Порт 2083, SNI: vpvks.ru |
-| **WireGuard** | ✅ | Порт 51820 (резервный) |
 | **Backend (Flask)** | ✅ | Порт 8080, интегрирован с Marzban |
 | **Telegram Bot** | ✅ | @relatevpnbot, выдаёт ключи через /key |
 | **YooKassa** | ✅ | Настроена (Shop ID: 1266298) |
@@ -48,7 +47,7 @@
 │              Backend (Flask, порт 8080)                  │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
 │  │ VPN Service │  │Payment Svc  │  │ Business Logic  │  │
-│  │(WireGuard)  │  │ (YooKassa)  │  │     Service     │  │
+│  │ (Marzban)   │  │ (YooKassa)  │  │     Service     │  │
 │  └─────────────┘  └─────────────┘  └─────────────────┘  │
 └────────────┬──────────────────────────────┬──────────────┘
              │                               │
@@ -58,7 +57,7 @@
 │  - users            │          │   - VLESS Reality:8443   │
 │  - payments         │          │   - Trojan TLS:2083      │
 │  - vpn_configs      │          │   - API:8000             │
-│  - wireguard конфиги│          │   - SQLite БД            │
+│                     │          │   - SQLite БД            │
 └─────────────────────┘          └──────────────────────────┘
 ```
 
@@ -133,7 +132,6 @@
 ### Firewall (UFW):
 
 ```bash
-51820/udp  ALLOW  # WireGuard
 80/tcp     ALLOW  # HTTP
 443/tcp    ALLOW  # HTTPS
 22/tcp     ALLOW  # SSH
@@ -355,11 +353,10 @@ class PaymentService:
 - ✅ **ВСЁ РАБОТАЕТ!**
 - ✅ VLESS Reality с SNI `www.microsoft.com`
 - ✅ Trojan TLS работает
-- ✅ WireGuard работает
 - ✅ Backend интегрирован с Marzban
 - ✅ Bot выдаёт ключи через `/key`
 - ✅ YooKassa настроена
-- ✅ Firewall открыт (8443, 2083, 51820)
+- ✅ Firewall открыт (8443, 2083)
 - ✅ Instagram работает
 - ✅ YouTube работает
 
@@ -375,7 +372,6 @@ class PaymentService:
 - ✅ SSL настроен (Let's Encrypt)
 - ✅ VPN Bot + Mini App работают
 - ✅ YooKassa интегрирована
-- ✅ WireGuard настроен
 
 ---
 
@@ -402,7 +398,7 @@ curl -s -k https://127.0.0.1:8000/api/system
 curl -s http://localhost:8080/api/status
 
 # Проверка портов
-ss -tulpn | grep -E "8443|2083|51820"
+ss -tulpn | grep -E "8443|2083"
 ```
 
 ---

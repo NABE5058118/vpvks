@@ -17,7 +17,7 @@ import aiohttp
 from utils.validation import validate_user_id, sanitize_input
 
 # Импорты обработчиков VPN ключей
-from handlers.vpn_key_handler import get_vpn_key, handle_vpn_selection, renew_vpn_key, handle_renew_selection
+from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_selection
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -331,18 +331,14 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     callback_data = query.data
     user_id = update.effective_user.id
-    
+
     # Import here to avoid scope issues
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-    # Обработка выбора VPN
-    if callback_data == "vpn_v2ray":
-        await handle_vpn_selection(update, context)
-        return
-
-    # Обработка перевыпуска VPN
-    if callback_data in ["renew_v2ray", "renew_cancel"]:
-        await handle_renew_selection(update, context)
+    # Обработка инструкции по VPN
+    if callback_data == "vpn_instruction":
+        from handlers.vpn_key_handler import show_vpn_instruction
+        await show_vpn_instruction(update, context)
         return
 
     if callback_data == "menu_balance":

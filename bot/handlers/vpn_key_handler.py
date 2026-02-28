@@ -15,146 +15,110 @@ logger = logging.getLogger(__name__)
 
 
 async def get_vpn_key(update: Update, context):
-    """Получение ключа VPN (V2Ray)"""
+    """Получение ключа VPN (V2Ray) - сразу открываем Mini App"""
     user_id = update.effective_user.id
-
+    
+    from config import MINI_APP_URL
+    from telegram import WebAppInfo
+    
+    # Создаём клавиатуру с кнопкой открытия Mini App
     keyboard = [
         [
-            InlineKeyboardButton("🔒 V2Ray (VLESS/Trojan)", callback_data="vpn_v2ray"),
+            InlineKeyboardButton("🔑 Открыть экран получения ключа", web_app=WebAppInfo(url=MINI_APP_URL)),
+        ],
+        [
+            InlineKeyboardButton("📱 Инструкция", callback_data="vpn_instruction"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
+    
     await update.message.reply_text(
-        "🔑 Выберите тип VPN подключения:\n\n"
-        "🔒 V2Ray (VLESS/Trojan) — лучше обходит блокировки\n\n"
-        "Протокол работает на наших серверах.",
-        reply_markup=reply_markup
+        "🔑 **Ключ V2Ray**\n\n"
+        "🚀 VLESS Reality + Trojan TLS\n"
+        "Лучшее решение для обхода блокировок\n\n"
+        "Нажмите кнопку ниже, чтобы получить ключ:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
     )
 
 
-async def handle_vpn_selection(update: Update, context):
-    """Обработка выбора VPN протокола"""
+async def show_vpn_instruction(update: Update, context):
+    """Показать инструкцию по использованию ключа"""
     query = update.callback_query
     await query.answer()
-
-    user_id = update.effective_user.id
-    vpn_type = query.data
-
-    await query.edit_message_text("⏳ Генерирую ключ...")
-
-    try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            if vpn_type == "vpn_v2ray":
-                async with session.post(
-                    f"{BACKEND_URL}/api/marzban/create",
-                    json={'user_id': user_id, 'tariff': 'standard'}
-                ) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data.get('status') == 'success':
-                            subscription_url = data.get('subscription_url', '')
-                            username = data.get('username', '')
-
-                            if not subscription_url:
-                                # Пробуем получить подписку отдельно
-                                await query.edit_message_text(
-                                    f"✅ Ваш ключ V2Ray готов!\n\n"
-                                    f"👤 Логин: {username}\n\n"
-                                    f"⏳ Ссылка генерируется...\n"
-                                    f"Попробуйте получить ключ ещё раз."
-                                )
-                            else:
-                                await query.edit_message_text(
-                                    f"✅ Ваш ключ V2Ray готов!\n\n"
-                                    f"🔑 Ссылка подписки:\n{subscription_url}\n\n"
-                                    f"📱 Инструкция:\n"
-                                    f"1. Скачайте v2rayNG (Android) или V2Box (iOS)\n"
-                                    f"2. Добавьте подписку\n"
-                                    f"3. Подключитесь\n\n"
-                                    f"👤 Логин: {username}"
-                                )
-                        else:
-                            await query.edit_message_text(
-                                f"❌ Ошибка: {data.get('message', 'Неизвестная ошибка')}"
-                            )
-                    else:
-                        await query.edit_message_text(f"❌ Ошибка сервера (код: {response.status})")
-
-    except Exception as e:
-        logger.error(f"Error in handle_vpn_selection: {e}")
-        await query.edit_message_text(
-            "❌ Произошла ошибка при генерации ключа.\n"
-            "Попробуйте позже или обратитесь в поддержку."
-        )
+    
+    instruction_text = (
+        "📱 **Инструкция по подключению**\n\n"
+        "**1. Скачайте приложение:**\n"
+        "• Android: v2rayNG, Hiddify\n"
+        "• iOS: V2Box, Hiddify, Streisand\n"
+        "• Все платформы: Hiddify\n\n"
+        "**2. Добавьте подписку:**\n"
+        "• Откройте приложение\n"
+        "• Нажмите «Добавить подписку» или «Import from URL»\n"
+        "• Вставьте ссылку из Mini App\n\n"
+        "**3. Подключитесь:**\n"
+        "• Выберите сервер\n"
+        "• Нажмите кнопку подключения\n"
+        "• Пользуйтесь! ✅\n\n"
+        "🔒 Протоколы: VLESS Reality + Trojan TLS\n"
+        "🌍 Сервер: Стокгольм, Швеция"
+    )
+    
+    await query.edit_message_text(instruction_text, parse_mode='Markdown')
 
 
 async def renew_vpn_key(update: Update, context):
-    """Перевыпуск ключа VPN"""
+    """Перевыпуск ключа VPN - сразу открываем Mini App"""
     user_id = update.effective_user.id
-
+    
+    from config import MINI_APP_URL
+    from telegram import WebAppInfo
+    
     keyboard = [
         [
-            InlineKeyboardButton("🔒 V2Ray", callback_data="renew_v2ray"),
+            InlineKeyboardButton("🔄 Перевыпустить ключ", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
             InlineKeyboardButton("❌ Отмена", callback_data="renew_cancel"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
+    
     await update.message.reply_text(
-        "⚠️ Перевыпуск ключа VPN\n\n"
+        "⚠️ **Перевыпуск ключа V2Ray**\n\n"
         "Это действие создаст новый ключ и аннулирует старый.\n\n"
-        "Выберите протокол:",
-        reply_markup=reply_markup
+        "Нажмите кнопку для перевыпуска:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
     )
 
 
 async def handle_renew_selection(update: Update, context):
-    """Обработка выбора перевыпуска ключа"""
+    """Обработка перевыпуска ключа"""
     query = update.callback_query
     await query.answer()
-
-    user_id = update.effective_user.id
+    
     action = query.data
-
+    
     if action == "renew_cancel":
         await query.edit_message_text("❌ Перевыпуск ключа отменён.")
         return
-
-    await query.edit_message_text("⏳ Перевыпускаю ключ...")
-
-    try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            if action == "renew_v2ray":
-                async with session.post(
-                    f"{BACKEND_URL}/api/marzban/remove/{user_id}"
-                ) as remove_response:
-                    async with session.post(
-                        f"{BACKEND_URL}/api/marzban/create",
-                        json={'user_id': user_id, 'tariff': 'standard'}
-                    ) as create_response:
-                        if create_response.status == 200:
-                            data = await create_response.json()
-                            if data.get('status') == 'success':
-                                subscription_url = data.get('subscription_url', '')
-                                await query.edit_message_text(
-                                    f"✅ Ключ V2Ray перевыпущен!\n\n"
-                                    f"🔑 Новая ссылка:\n{subscription_url}\n\n"
-                                    f"⚠️ Старый ключ больше не работает!"
-                                )
-                            else:
-                                await query.edit_message_text(f"❌ Ошибка: {data.get('message')}")
-                        else:
-                            await query.edit_message_text(f"❌ Ошибка сервера")
-
-    except Exception as e:
-        logger.error(f"Error in handle_renew_selection: {e}")
-        await query.edit_message_text("❌ Ошибка при перевыпуске ключа.")
+    
+    # Перевыпуск через Mini App
+    from config import MINI_APP_URL
+    from telegram import WebAppInfo
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔑 Открыть для перевыпуска", web_app=WebAppInfo(url=MINI_APP_URL)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        "🔄 **Перевыпуск ключа**\n\n"
+        "Откройте Mini App для перевыпуска ключа:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )

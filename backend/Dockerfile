@@ -6,7 +6,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
-    wireguard-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируй requirements

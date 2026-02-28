@@ -32,7 +32,6 @@
 |----------|------|----------|--------|
 | **VLESS Reality** | 8443 | Обход блокировок, маскировка под Microsoft | ✅ Работает |
 | **Trojan TLS** | 2083 | Маскировка под HTTPS трафик | ✅ Работает |
-| **WireGuard** | 51820 | Высокая скорость, резервный вариант | ✅ Работает |
 
 ### Возможности
 
@@ -77,7 +76,6 @@
 |----------|------|-----|------------|--------|
 | **VLESS Reality** | 8443 | `www.microsoft.com` | `daGDXnfX27yZ0e_ADuEMLJ3s96lMs2J3DGeBBw9XT0k` | ✅ |
 | **Trojan TLS** | 2083 | `vpvks.ru` | — | ✅ |
-| **WireGuard** | 51820 | — | `0gKla07MC1eDcaIuN4YSA5zKpDchNH0PCfELHBM3d34=` | ✅ |
 
 ### Тесты
 
@@ -101,23 +99,23 @@
                              │
         ┌────────────────────┼────────────────────┐
         │                    │                    │
-        ▼                    ▼                    ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│ Backend:8080  │   │ Marzban:8000  │   │WireGuard:51820│
-│ (Flask API)   │   │ (V2Ray/Xray)  │   │ (UDP)         │
-└───────┬───────┘   └───────┬───────┘   └───────────────┘
-        │                   │
-        ▼                   ▼
-┌───────────────┐   ┌───────────────┐
-│ PgBouncer:6432│   │   SQLite      │
-│ (pooler)      │   │   db.sqlite3  │
-└───────┬───────┘   └───────────────┘
-        │
-        ▼
-┌───────────────┐
-│ PostgreSQL:5432│
-│ (Docker)      │
-└───────────────┘
+        ▼                    ▼                    │
+┌───────────────┐   ┌───────────────┐             │
+│ Backend:8080  │   │ Marzban:8000  │             │
+│ (Flask API)   │   │ (V2Ray/Xray)  │             │
+└───────┬───────┘   └───────┬───────┘             │
+        │                   │                      │
+        ▼                   ▼                      │
+┌───────────────┐   ┌───────────────┐             │
+│ PgBouncer:6432│   │   SQLite      │             │
+│ (pooler)      │   │   db.sqlite3  │             │
+└───────┬───────┘   └───────────────┘             │
+        │                                          │
+        ▼                                          │
+┌───────────────┐                                  │
+│ PostgreSQL:5432│                                  │
+│ (Docker)      │                                  │
+└───────────────┘                                  │
 ```
 
 ### Структура проекта
@@ -138,7 +136,7 @@
 │   │   ├── payment.py
 │   │   └── vpn_config.py
 │   ├── services/
-│   │   ├── vpn_service.py      # WireGuard + Marzban
+│   │   ├── vpn_service.py      # Marzban (V2Ray/Trojan)
 │   │   ├── payment_service.py  # YooKassa
 │   │   └── marzban_client.py   # Marzban API client
 │   └── templates/
@@ -260,22 +258,6 @@ Fragment: ✅ true (tlshello, 10-20, 10-20)
     "/etc/letsencrypt/live/vpvks.ru/privkey.pem"
   ]
 }
-```
-
-### WireGuard (резервный)
-
-**Конфигурация:**
-```ini
-[Interface]
-PrivateKey = <client_private_key>
-Address = 10.0.0.x/32
-DNS = 8.8.8.8
-
-[Peer]
-PublicKey = 0gKla07MC1eDcaIuN4YSA5zKpDchNH0PCfELHBM3d34=
-Endpoint = 23.134.216.190:51820
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
 ```
 
 ---
@@ -634,7 +616,7 @@ tail -f /var/log/nginx/error.log
 | **Uptime** | 99.9% |
 | **Пинг до Москвы** | ~45ms |
 | **Скорость** | ~100 Мбит/с |
-| **Протоколы** | 3 (VLESS, Trojan, WireGuard) |
+| **Протоколы** | 2 (VLESS Reality, Trojan TLS) |
 
 ### Целевые
 
@@ -665,11 +647,10 @@ tail -f /var/log/nginx/error.log
 - ✅ **ВСЁ РАБОТАЕТ!**
 - ✅ VLESS Reality с SNI `www.microsoft.com`
 - ✅ Trojan TLS работает
-- ✅ WireGuard работает
 - ✅ Backend интегрирован с Marzban
 - ✅ Bot выдаёт ключи через `/key`
 - ✅ YooKassa настроена
-- ✅ Firewall открыт (8443, 2083, 51820)
+- ✅ Firewall открыт (8443, 2083)
 - ⚠️ Instagram блокирует IP дата-центра (требуется мобильный прокси)
 
 ### 22 февраля 2026
@@ -683,7 +664,6 @@ tail -f /var/log/nginx/error.log
 - ✅ SSL настроен (Let's Encrypt)
 - ✅ VPN Bot + Mini App работают
 - ✅ YooKassa интегрирована
-- ✅ WireGuard настроен
 
 ---
 
@@ -692,21 +672,11 @@ tail -f /var/log/nginx/error.log
 ```
 v1.0.0 (24.02.2026)
 - ✅ Полная интеграция Marzban + Backend
-- ✅ Bot выдаёт ключи V2Ray/WireGuard
+- ✅ Bot выдаёт ключи V2Ray (VLESS/Trojan)
 - ✅ YooKassa принимает платежи
 - ✅ Mini App личный кабинет
 - ✅ VLESS Reality с Microsoft SNI
 - ✅ Fragment для обхода DPI
-
-v0.9.0 (22.02.2026)
-- ✅ Marzban на network_mode: host
-- ✅ Xray порты 8443/2083 открыты
-- ✅ nginx проксирует подписки
-
-v0.1.0 (19.02.2026)
-- ✅ Первый запуск сервера
-- ✅ Docker настроен
-- ✅ SSL получен
 ```
 
 ---

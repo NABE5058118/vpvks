@@ -38,7 +38,6 @@ ufw allow 443/tcp      # HTTPS
 ufw allow 80/tcp       # HTTP
 ufw allow 8443/tcp     # VLESS Reality
 ufw allow 2083/tcp     # Trojan TLS
-ufw allow 51820/udp    # WireGuard
 ufw --force enable
 ufw status
 ```
@@ -88,13 +87,6 @@ YOOKASSA_SHOP_ID=<shop_id>
 YOOKASSA_SECRET_KEY=<secret_key>
 YOOKASSA_TEST_MODE=true
 YOOKASSA_RETURN_URL=https://vpvks.ru/payment-success
-
-# WireGuard
-WG_SERVER_IP=10.0.0.1
-WG_PORT=51820
-WG_DNS=8.8.8.8
-WG_SERVER_PUBLIC_KEY=<wg_public_key>
-WG_CONFIG_DIR=./wg_configs
 
 # Marzban
 MARZBAN_URL=http://127.0.0.1:8000
