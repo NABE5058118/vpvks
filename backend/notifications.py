@@ -23,21 +23,26 @@ class NotificationService:
         if not BOT_TOKEN:
             logger.error("TELEGRAM_BOT_TOKEN not set in environment variables!")
             raise ValueError("TELEGRAM_BOT_TOKEN not set in environment variables!")
-        
+
         self.bot = Bot(token=BOT_TOKEN)
 
-    async def send_payment_success_notification(self, user_id: int):
+    async def send_payment_success_notification(self, user_id: int, amount: float = 0, days: int = 0):
         """Send notification to user about successful payment"""
         logger.info(f"Attempting to send payment success notification to user {user_id}")
         try:
             message = (
-                "🎉 Поздравляем! Ваша оплата прошла успешно!\n\n"
-                "✅ Ваша подписка активирована.\n"
-                "🔒 Теперь вы можете использовать VPN без ограничений.\n\n"
-                "Для проверки статуса подписки используйте команду /status"
+                "✅ **Оплата прошла успешно! VPVKS**\n\n"
+                f"💰 Сумма: {amount}₽\n"
+                f"📅 Подписка продлена на {days} дн.\n\n"
+                "Спасибо за оплату! Ваш VPN доступен.\n\n"
+                "🔑 Открыть ключи: /app"
             )
-            
-            await self.bot.send_message(chat_id=user_id, text=message)
+
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=message,
+                parse_mode='Markdown'
+            )
             logger.info(f"Payment success notification sent to user {user_id}")
         except Exception as e:
             logger.error(f"Error sending payment success notification to user {user_id}: {e}")
@@ -67,13 +72,13 @@ class NotificationService:
 # Global instance of notification service
 notification_service = NotificationService()
 
-def send_payment_success_notification_sync(user_id: int):
+def send_payment_success_notification_sync(user_id: int, amount: float = 0, days: int = 0):
     """Synchronous wrapper for sending payment success notification"""
     logger.info(f"Calling synchronous payment success notification for user {user_id}")
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(notification_service.send_payment_success_notification(user_id))
+        loop.run_until_complete(notification_service.send_payment_success_notification(user_id, amount, days))
         loop.close()
         logger.info(f"Synchronous payment success notification completed for user {user_id}")
     except Exception as e:

@@ -129,15 +129,19 @@ class VPNService:
         """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
             from datetime import datetime, timedelta
-            from models.user import User
+            from database.models.user_model import User as UserModel
 
-            # Check if user exists
-            user = User.get_by_id(user_id)
+            # Check if user exists in PostgreSQL
+            user = UserModel.query.filter_by(id=user_id).first()
             if not user:
-                return {
-                    'status': 'error',
-                    'message': f'User {user_id} not found'
+                logger.info(f"User {user_id} not found in DB, creating...")
+                # Создаём пользователя в БД если нет
+                user_data = {
+                    'id': user_id,
+                    'username': f'user_{user_id}'
                 }
+                from models.user import User
+                user = User.create(user_data)
 
             # Все ключи бесплатные и бессрочные
             # Тарифы (все с большим сроком - 10 лет = 3650 дней)

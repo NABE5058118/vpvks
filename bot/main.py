@@ -1,9 +1,10 @@
 import asyncio
 import logging
+from datetime import datetime
 from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, JobQueue
 
-from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL
+from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_USER_IDS
 
 # Настройка логирования
 logging.basicConfig(
@@ -18,6 +19,9 @@ from utils.validation import validate_user_id, sanitize_input
 
 # Импорты обработчиков VPN ключей
 from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_selection
+
+# Импорты уведомлений
+from notifications import send_expiration_reminder, send_welcome_notification_sync
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,6 +98,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='HTML')
+    
+    # Отправляем приветственное уведомление
+    try:
+        send_welcome_notification_sync(user_id, username_display)
+    except Exception as e:
+        logger.error(f"Не удалось отправить приветственное уведомление: {e}")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -397,9 +407,22 @@ def main():
         application.add_handler(CommandHandler("key", key_command))
         application.add_handler(CommandHandler("app", app_command))
         application.add_handler(CommandHandler("admin", admin_command))
-
+        
         # Register callback query handler for menu
         application.add_handler(CallbackQueryHandler(handle_plan_selection))
+
+        # Setup JobQueue for automatic notifications
+        logger.info("Setting up JobQueue for automatic notifications...")
+        job_queue = JobQueue()
+        job_queue.application = application
+        
+        # Ежедневная проверка подписок в 10:00
+        job_queue.run_daily(
+            send_expiration_reminder,
+            time=datetime.time(10, 0),  # 10:00 утра
+            name="expiration_reminder"
+        )
+        logger.info("✅ JobQueue настроен: уведомления об истечении в 10:00")
 
         # Start the bot
         logger.info("Starting VPN Bot polling...")

@@ -345,13 +345,13 @@ class BusinessLogicService:
 
                 # Send notification to user about subscription activation
                 try:
-                    from notifications import send_subscription_activated_notification_sync
-                    logger.info(f"Sending subscription activation notification to user {user_id}")
-                    send_subscription_activated_notification_sync(user_id, days_to_add)
-                    logger.info(f"Subscription activation notification sent to user {user_id}")
+                    from notifications import send_payment_success_notification_sync
+                    logger.info(f"Sending payment success notification to user {user_id}")
+                    send_payment_success_notification_sync(user_id, amount_float, days_to_add)
+                    logger.info(f"Payment success notification sent to user {user_id}")
                 except Exception as e:
-                    print(f"Error sending subscription activation notification to user {user_id}: {e}")
-                    logger.error(f"Error sending subscription activation notification to user {user_id}: {e}")
+                    print(f"Error sending payment notification to user {user_id}: {e}")
+                    logger.error(f"Error sending payment notification to user {user_id}: {e}")
 
                 return {
                     'status': 'success',
