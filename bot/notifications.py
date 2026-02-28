@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from telegram import Bot
 from telegram.ext import ContextTypes
-from config import BOT_TOKEN, ADMIN_USER_IDS
+from config import BOT_TOKEN, ADMIN_IDS
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +189,7 @@ async def send_broadcast_message(message_text: str, exclude_admins: bool = True)
         
         for user in users:
             # Исключаем админов если нужно
-            if exclude_admins and user.id in ADMIN_USER_IDS:
+            if exclude_admins and user.id in ADMIN_IDS:
                 continue
             
             try:
