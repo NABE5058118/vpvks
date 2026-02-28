@@ -320,20 +320,48 @@ PersistentKeepalive = 25
             # Проверка, существует ли уже пользователь
             existing_user = self.marzban.get_user(username)
             if existing_user.get("status") == "success":
-                # Пользователь уже существует, получаем ссылку подписки
+                # Пользователь уже существует, получаем данные
+                user_data = existing_user.get("data", {})
+                expire_timestamp = user_data.get("expire")
                 subscription_url = self.marzban.get_subscription_url(username)
+                
                 if subscription_url:
+                    # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL для существующего пользователя
+                    from database.db_config import db
+                    from models.user import User as UserModel
+                    from datetime import datetime
+                    
+                    user = UserModel.query.filter_by(id=user_id).first()
+                    if user and expire_timestamp and expire_timestamp > 0:
+                        user.subscription_end_date = datetime.fromtimestamp(expire_timestamp)
+                        db.session.commit()
+                        logger.info(f"✅ Синхронизировано subscription_end_date для existing user_{user_id}: {user.subscription_end_date}")
+                    
                     return {
                         "status": "success",
                         "protocol": "v2ray",
                         "subscription_url": subscription_url,
                         "username": username,
-                        "message": "Existing user, retrieved subscription"
+                        "message": "Existing user, retrieved subscription",
+                        "expire_timestamp": expire_timestamp
                     }
                 else:
                     # Пользователь есть, но ссылки нет - продлеваем на 10 лет
                     result = self.marzban.extend_user(username, 3650)
                     subscription_url = self.marzban.get_subscription_url(username)
+                    
+                    # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL после продления
+                    from database.db_config import db
+                    from models.user import User as UserModel
+                    from datetime import datetime
+                    
+                    user = UserModel.query.filter_by(id=user_id).first()
+                    if user:
+                        new_expire = int(datetime.utcnow().timestamp()) + (3650 * 86400)
+                        user.subscription_end_date = datetime.fromtimestamp(new_expire)
+                        db.session.commit()
+                        logger.info(f"✅ Синхронизировано subscription_end_date для extended user_{user_id}: {user.subscription_end_date}")
+                    
                     return {
                         "status": "success",
                         "protocol": "v2ray",
