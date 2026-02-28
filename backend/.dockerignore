@@ -10,8 +10,6 @@ __pycache__/
 *.egg
 dist/
 build/
-*.manifest
-*.spec
 
 # ===========================================
 # Virtual environments
@@ -27,10 +25,8 @@ env/
 # ===========================================
 .env
 .env.local
-.env.*.local
 *.env
 !*.env.example
-marzban.env
 
 # ===========================================
 # IDE
@@ -40,19 +36,14 @@ marzban.env
 *.swp
 *.swo
 *~
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
 
 # ===========================================
 # Logs
 # ===========================================
 *.log
+server.log
 logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.log.*
 
 # ===========================================
 # Database
@@ -60,7 +51,6 @@ yarn-error.log*
 *.db
 *.sqlite
 *.sqlite3
-*.sql
 
 # ===========================================
 # WireGuard keys (IMPORTANT!)
@@ -80,7 +70,6 @@ temp/
 *.tmp
 *.temp
 .cache/
-.thumbs.db
 
 # ===========================================
 # Tests
@@ -88,44 +77,41 @@ temp/
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
-coverage.xml
-*.cover
-
-# ===========================================
-# Docker
-# ===========================================
-*.pid
-*.seed
-*.lock
+tests/
+test_*.py
+*_test.py
 
 # ===========================================
 # Git
 # ===========================================
-.gitconfig
-.git-credentials
+.git/
+.gitignore
+.gitattributes
+
+# ===========================================
+# Docker
+# ===========================================
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# ===========================================
+# Documentation
+# ===========================================
+*.md
+!requirements.txt
+LICENSE
+README
+
+# ===========================================
+# PM2
+# ===========================================
+.pm2/
+ecosystem.config.js
 
 # ===========================================
 # OS
 # ===========================================
 .DS_Store
-.AppleDouble
-.LSOverride
-._*
 Thumbs.db
-Desktop.ini
-
-# ===========================================
-# Project specific
-# ===========================================
-# Sync scripts (не нужны в git)
-sync_all_users.py
-
-# PM2 (не используется)
-.pm2/
-ecosystem.config.js
-
-# Backup files
-*.bak
-*.backup
-*.old
+._*

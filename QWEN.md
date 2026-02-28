@@ -1,2 +1,0 @@
-## Qwen Added Memories
-- VPN Project: Сервер 23.134.216.190, домен vpvks.ru, пользователь vpvks (без логина). Стек: Marzban (V2Ray/Trojan/Reality) + Telegram бот + Flask backend + PostgreSQL + PgBouncer + nginx + SSL. При развёртывании Marzban с PostgreSQL возможна ошибка миграции Alembic с колонкой alpn — требует ручного исправления через psql (DROP TYPE, ALTER COLUMN, CREATE TYPE ENUM).
