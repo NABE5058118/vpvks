@@ -23,6 +23,12 @@ class User(db.Model):
     connection_history = db.Column(db.Text, nullable=True)  # Store as JSON string
     balance = db.Column(db.Integer, default=0)  # User balance in stars
     is_tester = db.Column(db.Boolean, default=False)  # Tester flag for unlimited access
+    
+    # Anti-Sharing fields
+    last_connected_ip = db.Column(db.String(45), nullable=True)  # IPv6 до 45 символов
+    last_connected_user_agent = db.Column(db.String(500), nullable=True)
+    connection_count = db.Column(db.Integer, default=0)
+    suspicious_activity = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         """Convert user object to dictionary"""
@@ -37,7 +43,11 @@ class User(db.Model):
             'last_charge_date': self.last_charge_date.isoformat() if self.last_charge_date else None,
             'connection_history': self.connection_history,
             'balance': self.balance,
-            'is_tester': self.is_tester
+            'is_tester': self.is_tester,
+            # Anti-Sharing fields
+            'last_connected_ip': self.last_connected_ip,
+            'connection_count': self.connection_count,
+            'suspicious_activity': self.suspicious_activity
         }
 
     def add_connection_log(self, connected=True):

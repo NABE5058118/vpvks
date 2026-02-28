@@ -98,6 +98,100 @@ def vpn_status(user_id):
         return jsonify({'error': str(e)}), 500
 
 
+@routes_bp.route('/api/vpn/check-fingerprint', methods=['POST'])
+def check_fingerprint():
+    """
+    Проверка device fingerprint для защиты от шаринга
+    Возвращает warning если обнаружено подключение с нового устройства
+    """
+    try:
+        from database.db_config import db
+        from database.models.user_model import User as UserModel
+        
+        data = request.get_json()
+        user_id = data.get('user_id')
+        ip = data.get('ip')
+        user_agent = data.get('user_agent')
+        
+        if not user_id or not ip:
+            return jsonify({'error': 'user_id and ip are required'}), 400
+        
+        user = UserModel.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Первое подключение
+        if not user.last_connected_ip:
+            user.last_connected_ip = ip
+            user.last_connected_user_agent = user_agent
+            user.connection_count = 1
+            db.session.commit()
+            logger.info(f"🔒 Первое подключение для user_{user_id} с IP {ip}")
+            return jsonify({
+                'status': 'ok',
+                'message': 'Первое подключение'
+            })
+        
+        # Проверка совпадения
+        if user.last_connected_ip != ip or user.last_connected_user_agent != user_agent:
+            user.connection_count += 1
+            
+            # Если 3+ разных устройства — подозрительно
+            if user.connection_count >= 3:
+                user.suspicious_activity = True
+                db.session.commit()
+                logger.warning(f"⚠️ Подозрительная активность: user_{user_id} подключился с {user.connection_count} разных устройств")
+                return jsonify({
+                    'status': 'warning',
+                    'message': 'Обнаружено подключение с нового устройства. Если это не вы — обратитесь в поддержку.'
+                }), 403
+            
+            # Обновляем fingerprint
+            user.last_connected_ip = ip
+            user.last_connected_user_agent = user_agent
+            user.connection_count = 1
+            db.session.commit()
+            logger.info(f"🔒 Обновлён fingerprint для user_{user_id}: новый IP {ip}")
+            return jsonify({
+                'status': 'ok',
+                'message': 'Fingerprint обновлён'
+            })
+        
+        # Всё совпадает - обычное подключение
+        user.connection_count = 1
+        db.session.commit()
+        return jsonify({'status': 'ok'})
+        
+    except Exception as e:
+        logger.error(f"Error in check_fingerprint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@routes_bp.route('/api/users/<int:user_id>/reset-device', methods=['POST'])
+def reset_device(user_id):
+    """Сброс fingerprint устройства пользователя"""
+    try:
+        from database.db_config import db
+        from database.models.user_model import User as UserModel
+        
+        user = UserModel.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user.last_connected_ip = None
+        user.last_connected_user_agent = None
+        user.connection_count = 0
+        user.suspicious_activity = False
+        db.session.commit()
+        
+        logger.info(f"🔄 Сброшен fingerprint для user_{user_id}")
+        return jsonify({'status': 'success', 'message': 'Устройство сброшено'})
+        
+    except Exception as e:
+        logger.error(f"Error in reset_device: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @routes_bp.route('/api/payment/check/<payment_id>', methods=['GET'])
 def check_payment(payment_id):
     """Check payment status"""

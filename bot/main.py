@@ -297,6 +297,29 @@ async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def reset_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /reset_device command - сброс fingerprint устройства"""
+    user_id = update.effective_user.id
+    
+    try:
+        timeout = aiohttp.ClientTimeout(total=10, connect=5)
+        connector = aiohttp.TCPConnector(ssl=False)
+        
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            async with session.post(f"{BACKEND_URL}/api/users/{user_id}/reset-device") as response:
+                if response.status == 200:
+                    await update.message.reply_text(
+                        "✅ Устройство сброшено!\n\n"
+                        "Теперь вы можете подключиться с нового устройства.\n\n"
+                        "Если у вас возникли проблемы - напишите в поддержку."
+                    )
+                else:
+                    await update.message.reply_text("❌ Ошибка при сбросе устройства. Попробуйте позже.")
+    except Exception as e:
+        logger.error(f"Error in reset_device: {e}")
+        await update.message.reply_text("❌ Произошла ошибка. Попробуйте позже.")
+
+
 async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /admin command for administrators"""
     from config import is_admin
@@ -433,6 +456,7 @@ def main():
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CommandHandler("key", key_command))
         application.add_handler(CommandHandler("app", app_command))
+        application.add_handler(CommandHandler("reset_device", reset_device))
         application.add_handler(CommandHandler("admin", admin_command))
         
         # Register callback query handler for menu

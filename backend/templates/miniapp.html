@@ -709,6 +709,47 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳</span> Генерация ключа...';
 
+                // Получаем IP и User-Agent для anti-sharing
+                let ip = '';
+                let userAgent = navigator.userAgent;
+                
+                try {
+                    const ipResponse = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await ipResponse.json();
+                    ip = ipData.ip;
+                } catch (e) {
+                    console.log('Не удалось получить IP:', e);
+                }
+
+                // Проверяем fingerprint
+                try {
+                    const fingerprintResponse = await fetch('/api/vpn/check-fingerprint', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            ip: ip,
+                            user_agent: userAgent
+                        })
+                    });
+
+                    if (fingerprintResponse.status === 403) {
+                        const fingerprintData = await fingerprintResponse.json();
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        
+                        if (tg.showAlert) {
+                            tg.showAlert(`⚠️ ${fingerprintData.message}\n\nЕсли вы пытаетесь подключиться с нового устройства — используйте команду /reset_device в боте.`);
+                        } else {
+                            alert(`⚠️ ${fingerprintData.message}`);
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Fingerprint проверка не удалась:', e);
+                    // Продолжаем даже если проверка не удалась
+                }
+
                 // Запрашиваем создание пользователя в Marzban
                 const response = await fetch('/api/marzban/create', {
                     method: 'POST',
@@ -723,23 +764,23 @@
                     // Показываем ссылку
                     const container = document.getElementById('v2ray-subscription-container');
                     const linkText = document.getElementById('v2ray-link-text');
-                    
+
                     // Полная ссылка для подписки
-                    const fullUrl = data.subscription_url.startsWith('http') 
-                        ? data.subscription_url 
+                    const fullUrl = data.subscription_url.startsWith('http')
+                        ? data.subscription_url
                         : window.location.origin + data.subscription_url;
-                    
+
                     linkText.textContent = fullUrl;
                     container.style.display = 'block';
-                    
+
                     // Генерируем QR код из полной ссылки
                     const qrContainer = document.getElementById('v2ray-qrcode-image');
                     qrContainer.innerHTML = '';
-                    
+
                     const qrDiv = document.createElement('div');
                     qrDiv.id = 'v2ray-qrcode';
                     qrContainer.appendChild(qrDiv);
-                    
+
                     new QRCode(qrDiv, {
                         text: fullUrl,
                         width: 200,
@@ -752,7 +793,7 @@
                     btn.innerHTML = '<span>✅</span> Ключ получен!';
                     btn.classList.remove('btn-primary');
                     btn.classList.add('btn-secondary');
-                    
+
                     if (tg.showNotification) {
                         tg.showNotification({ type: 'success', message: 'Ключ V2Ray получен!' });
                     }
