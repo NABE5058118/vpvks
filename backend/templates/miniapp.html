@@ -705,6 +705,27 @@
                 const btn = event.target;
                 const originalText = btn.innerHTML;
 
+                // ПРОВЕРКА: Активна ли подписка
+                const statusResponse = await fetch(`/api/vpn/status/${userId}`);
+                const statusData = await statusResponse.json();
+                
+                if (statusData.status === 'success') {
+                    const subscription = statusData.subscription;
+                    if (subscription.status === 'expired' || subscription.status === 'no_subscription') {
+                        // Подписка не активна - показываем экран оплаты
+                        showPaymentSection();
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        
+                        if (tg.showAlert) {
+                            tg.showAlert('⚠️ Ваша подписка истекла или отсутствует.\n\nПожалуйста, оплатите подписку чтобы продолжить пользоваться VPN.');
+                        } else {
+                            alert('⚠️ Ваша подписка истекла или отсутствует. Пожалуйста, оплатите подписку.');
+                        }
+                        return;
+                    }
+                }
+
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳</span> Генерация ключа...';
 
