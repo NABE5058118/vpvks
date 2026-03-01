@@ -327,11 +327,31 @@ class VPNService:
                 )
                 return result
             
-            # Создаём нового пользователя через Marzban API
+            # Получаем доступные inbounds из Marzban
+            inbounds_response = self.marzban.get_inbounds()
+            available_inbounds = inbounds_response.get('inbounds', {}) if isinstance(inbounds_response, dict) else {}
+            
+            logger.info(f"Available inbounds: {available_inbounds}")
+            
+            # Формируем список inbounds для пользователя
+            user_inbounds = {}
+            
+            # VLESS
+            if 'vless' in available_inbounds and len(available_inbounds['vless']) > 0:
+                user_inbounds['vless'] = [available_inbounds['vless'][0]['tag']] if isinstance(available_inbounds['vless'][0], dict) else ['VLESS Reality']
+            
+            # Trojan
+            if 'trojan' in available_inbounds and len(available_inbounds['trojan']) > 0:
+                user_inbounds['trojan'] = [available_inbounds['trojan'][0]['tag']] if isinstance(available_inbounds['trojan'][0], dict) else ['Trojan TLS']
+            
+            logger.info(f"User inbounds: {user_inbounds}")
+            
+            # Создаём нового пользователя через Marzban API с inbounds
             result = self.marzban.create_user(
                 username=username,
                 data_limit=payload.get('data_limit', 10 * 1024**3),
-                expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400)
+                expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400),
+                inbounds=user_inbounds
             )
             
             return result

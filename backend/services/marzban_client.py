@@ -43,14 +43,15 @@ class MarzbanClient:
             return None
 
     def create_user(self, username: str, data_limit: int, expire_days: int,
-                    protocols: dict = None) -> dict:
+                    protocols: dict = None, inbounds: dict = None) -> dict:
         """Создание пользователя в Marzban
-        
+
         Args:
             username: Имя пользователя
             data_limit: Лимит трафика в байтах
             expire_days: Срок действия в днях
             protocols: Протоколы
+            inbounds: Inbounds для пользователя (например, {'vless': ['VLESS Reality'], 'trojan': ['Trojan TLS']})
         """
         token = self.get_token()
         if not token:
@@ -67,6 +68,11 @@ class MarzbanClient:
                 "data_limit": data_limit,
             }
             
+            # Добавляем inbounds если указаны
+            if inbounds:
+                payload["inbounds"] = inbounds
+                logger.info(f"Creating user {username} with inbounds={inbounds}")
+
             # Добавляем expire только если не None и > 0
             if expire_days is not None and expire_days > 0:
                 import time
@@ -82,7 +88,9 @@ class MarzbanClient:
                 verify=False
             )
             response.raise_for_status()
-            return {"status": "success", "data": response.json()}
+            result = response.json()
+            logger.info(f"User {username} created: {result}")
+            return {"status": "success", "data": result}
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 409:
                 return {"status": "error", "message": "User already exists"}
@@ -157,6 +165,29 @@ class MarzbanClient:
         except Exception as e:
             logger.error(f"Error creating Marzban user: {e}")
             return {"status": "error", "message": str(e)}
+
+    def get_inbounds(self):
+        """Получение списка доступных inbounds из Marzban"""
+        token = self.get_token()
+        if not token:
+            logger.error("Failed to get token for inbounds")
+            return {"inbounds": {}}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.get(
+                f"{self.base_url}/api/inbounds",
+                headers=headers,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            inbounds_data = response.json()
+            logger.info(f"Retrieved inbounds: {inbounds_data}")
+            return {"inbounds": inbounds_data}
+        except Exception as e:
+            logger.error(f"Error getting inbounds: {e}")
+            return {"inbounds": {}}
 
     def ensure_inbounds_enabled(self):
         """Проверяет и включает нужные inbound через модификацию конфига Xray"""
