@@ -299,3 +299,42 @@ class VPNService:
         except Exception as e:
             logger.error(f"Error extending Marzban user: {e}")
             return {"status": "error", "message": str(e)}
+
+    def create_marzban_user_with_payload(self, user_id: int, payload: dict):
+        """
+        Создание пользователя в Marzban с готовым payload
+        
+        :param user_id: ID пользователя в Telegram
+        :param payload: Словарь с параметрами:
+            - username: имя пользователя
+            - proxies: список протоколов
+            - data_limit: лимит трафика в байтах
+            - expire: Unix timestamp истечения
+            - inbounds: настройки протоколов
+        """
+        try:
+            username = payload.get('username', f'user_{user_id}')
+            
+            # Проверяем существует ли уже пользователь
+            existing = self.marzban.get_user(username)
+            if existing.get('status') == 'success':
+                logger.info(f"User {username} already exists, updating...")
+                # Обновляем существующего
+                result = self.marzban.modify_user(
+                    username,
+                    data_limit=payload.get('data_limit'),
+                    expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400)
+                )
+                return result
+            
+            # Создаём нового пользователя через Marzban API
+            result = self.marzban.create_user(
+                username=username,
+                data_limit=payload.get('data_limit', 10 * 1024**3),
+                expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400)
+            )
+            
+            return result
+        except Exception as e:
+            logger.error(f"Error creating Marzban user with payload: {e}")
+            return {"status": "error", "message": str(e)}

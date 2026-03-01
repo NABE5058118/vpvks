@@ -287,9 +287,10 @@ class BusinessLogicService:
 
                 # Determine subscription duration based on payment amount
                 duration_mapping = {
-                    110: 30,   # 1 month
-                    290: 120,  # 4 months
-                    500: 365   # 12 months
+                    1: 30,    # 1₽ тестовый тариф (30 дней)
+                    99: 30,   # 1 месяц
+                    299: 90,  # 3 месяца
+                    599: 180  # 6 месяцев
                 }
 
                 # Convert Decimal to float/int for mapping
@@ -334,6 +335,56 @@ class BusinessLogicService:
                 db.session.commit()
                 print(f"Committed changes to database for user {user_id}. Subscription end date: {user.subscription_end_date}")
                 logger.info(f"Committed changes to database for user {user_id}. Subscription end date: {user.subscription_end_date}")
+
+                # 🔴 СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ В MARZBAN
+                try:
+                    from services.vpn_service import vpn_service
+                    from datetime import datetime, timedelta
+                    
+                    # Определяем лимит трафика в зависимости от тарифа
+                    traffic_mapping = {
+                        1: 10 * 1024**3,      # 10 GB для тарифа за 1₽ (тест)
+                        99: 10 * 1024**3,     # 10 GB для 1 месяца
+                        299: 50 * 1024**3,    # 50 GB для 3 месяцев
+                        599: 100 * 1024**3    # 100 GB для 6 месяцев
+                    }
+                    data_limit = traffic_mapping.get(amount_float, 10 * 1024**3)
+                    
+                    # Вычисляем expire timestamp
+                    expire_date = user.subscription_end_date
+                    expire_timestamp = int(expire_date.timestamp())
+                    
+                    # Создаём username для Marzban
+                    username = f"user_{user_id}"
+                    
+                    # Формируем payload для Marzban
+                    protocols = ["VLESS Reality", "Trojan TLS"]
+                    payload = {
+                        "username": username,
+                        "proxies": protocols,
+                        "data_limit": data_limit,
+                        "expire": expire_timestamp,
+                        "inbounds": {
+                            "vless": ["VLESS Reality"],
+                            "trojan": ["Trojan TLS"]
+                        }
+                    }
+                    
+                    logger.info(f"Creating Marzban user {username} with payload: {payload}")
+                    
+                    # Создаём пользователя через VPN Service
+                    result = vpn_service.create_marzban_user_with_payload(user_id, payload)
+                    
+                    if result.get('status') == 'success':
+                        logger.info(f"✅ Marzban user created: {username}")
+                        print(f"✅ Marzban user created: {username}")
+                    else:
+                        logger.warning(f"⚠️ Marzban user creation failed: {result.get('message', 'Unknown error')}")
+                        print(f"⚠️ Marzban user creation failed: {result.get('message', 'Unknown error')}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Error creating Marzban user: {e}")
+                    print(f"❌ Error creating Marzban user: {e}")
 
                 # Send notification to user about subscription activation
                 try:
