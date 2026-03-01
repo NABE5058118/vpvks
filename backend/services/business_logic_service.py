@@ -92,9 +92,9 @@ class BusinessLogicService:
 
             # Define pricing based on plan type (in RUB)
             pricing = {
-                'month': {'price': 1, 'description': '1 месяц подписки', 'days': 30},
-                'quarter': {'price': 1, 'description': '3 месяца подписки', 'days': 90},
-                'halfyear': {'price': 1, 'description': '6 месяцев подписки', 'days': 180}
+                'month': {'price': 99, 'description': '1 месяц подписки', 'days': 30},
+                'quarter': {'price': 299, 'description': '3 месяца подписки', 'days': 90},
+                'halfyear': {'price': 599, 'description': '6 месяцев подписки', 'days': 180}
             }
 
             if plan_type not in pricing:
@@ -287,7 +287,6 @@ class BusinessLogicService:
 
                 # Determine subscription duration based on payment amount
                 duration_mapping = {
-                    1: 30,    # 1₽ тестовый тариф (30 дней)
                     99: 30,   # 1 месяц
                     299: 90,  # 3 месяца
                     599: 180  # 6 месяцев
@@ -343,7 +342,6 @@ class BusinessLogicService:
                     
                     # Определяем лимит трафика в зависимости от тарифа
                     traffic_mapping = {
-                        1: 10 * 1024**3,      # 10 GB для тарифа за 1₽ (тест)
                         99: 10 * 1024**3,     # 10 GB для 1 месяца
                         299: 50 * 1024**3,    # 50 GB для 3 месяцев
                         599: 100 * 1024**3    # 100 GB для 6 месяцев
