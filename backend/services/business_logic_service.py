@@ -82,7 +82,6 @@ class BusinessLogicService:
     def process_subscription_payment(self, user_id, plan_type):
         """Process payment for subscription plans via YooKassa"""
         try:
-            # First, verify that user exists
             from models.user import User
             user = User.get_by_id(user_id)
             if not user:
@@ -93,9 +92,9 @@ class BusinessLogicService:
 
             # Define pricing based on plan type (in RUB)
             pricing = {
-                'month': {'price': 110, 'description': '1 месяц - 110₽', 'days': 30},
-                '4months': {'price': 290, 'description': '4 месяца - 290₽', 'days': 120},
-                '12months': {'price': 500, 'description': '12 месяцев - 500₽', 'days': 365}
+                'month': {'price': 99, 'description': '1 месяц подписки', 'days': 30},
+                'quarter': {'price': 299, 'description': '3 месяца подписки', 'days': 90},
+                'halfyear': {'price': 599, 'description': '6 месяцев подписки', 'days': 180}
             }
 
             if plan_type not in pricing:
@@ -112,20 +111,13 @@ class BusinessLogicService:
                 'currency': 'RUB',
                 'description': plan['description'],
                 'user_id': user_id,
-                'return_url': 'http://localhost:5000/payment-success'
+                'return_url': 'https://vpvks.ru/payment-success'
             }
 
             payment_result = self.payment_service.create_payment(payment_data)
 
             if 'error' in payment_result:
                 return payment_result
-
-            # Check if this is a mock payment (test mode)
-            if 'id' in payment_result and 'mock_' in payment_result['id']:
-                # In test mode, immediately activate the subscription
-                print(f"Detected mock payment {payment_result['id']} for user {user_id}, activating subscription immediately")
-                activation_result = self.activate_subscription_for_user(user_id)
-                print(f"Subscription activation result for user {user_id}: {activation_result}")
 
             return {
                 'status': 'success',

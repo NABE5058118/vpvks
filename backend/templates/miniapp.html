@@ -580,17 +580,17 @@
                     <div class="tariff-card">
                         <div class="tariff-name"> 1 месяц </div>
                         <div class="tariff-price">99 ₽</div>
-                        <button class="buy-btn" onclick="initiateTopUp(1, 99)">Купить</button>
+                        <button class="buy-btn" onclick="initiateSubscription('month')">Купить</button>
                     </div>
                     <div class="tariff-card popular">
                         <div class="tariff-name"> 3 месяца </div>
                         <div class="tariff-price">299 ₽</div>
-                        <button class="buy-btn" onclick="initiateTopUp(3, 299)">Купить</button>
+                        <button class="buy-btn" onclick="initiateSubscription('quarter')">Купить</button>
                     </div>
                     <div class="tariff-card">
                         <div class="tariff-name"> 6 месяцев</div>
                         <div class="tariff-price">599 ₽</div>
-                        <button class="buy-btn" onclick="initiateTopUp(6, 599)">Купить</button>
+                        <button class="buy-btn" onclick="initiateSubscription('halfyear')">Купить</button>
                     </div>
                 </div>
             </div>
@@ -1035,54 +1035,68 @@
         // Инициализация подписки
         async function initiateSubscription(planType) {
             try {
-                // Получаем ID пользователя из Telegram Web App
                 const userId = tg.initDataUnsafe?.user?.id || '699469085';
+                
+                // Показываем индикатор загрузки
+                tg.MainButton.showProgress();
+                tg.MainButton.setText('Оформление...');
 
-                // Create payment via our API for subscription
                 const response = await fetch('/api/payment/create', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: userId,
                         plan_type: planType
                     })
                 });
 
+                tg.MainButton.hideProgress();
+                tg.MainButton.setText('Главная');
+
                 if (response.ok) {
                     const data = await response.json();
 
                     if (data.status === 'success' && data.payment?.confirmation_url) {
-                        // Check if this is a mock payment (test mode)
-                        if (data.payment.confirmation_url.includes('mock-payment') || data.payment.confirmation_url.includes('yoomoney.ru')) {
-                            // For mock payments, simulate successful payment immediately
-                            alert('Оплата прошла успешно! Подписка активирована.');
-                            
-                            // Update user data immediately to reflect successful payment
-                            setTimeout(() => {
-                                loadUserData();
-                            }, 1000);
-                        } else {
-                            // For real payments, open the confirmation URL through Telegram WebApp API for better iOS compatibility
-                            tg.openLink(data.payment.confirmation_url);
-
-                            // Show message to user
-                            alert('Открыта страница оплаты. После оплаты статус обновится автоматически.');
-                            
-                            // Force refresh user data after a delay to update status
-                            setTimeout(loadUserData, 5000); // Refresh after 5 seconds
+                        // Открываем YooKassa
+                        tg.openLink(data.payment.confirmation_url);
+                        
+                        // Показываем сообщение
+                        if (tg.showAlert) {
+                            tg.showAlert('📋 Оплата через YooKassa\n\n1. Оплатите тариф\n2. Вернитесь в приложение\n3. Статус обновится автоматически');
                         }
+                        
+                        // Обновляем статус через 3 секунды (после оплаты)
+                        setTimeout(() => {
+                            loadUserData();
+                        }, 3000);
+                        
+                        // Повторное обновление через 10 секунд
+                        setTimeout(() => {
+                            loadUserData();
+                        }, 10000);
+                        
                     } else {
-                        alert('Ошибка при создании платежа: ' + (data.message || 'Неизвестная ошибка'));
+                        if (tg.showAlert) {
+                            tg.showAlert('❌ Ошибка: ' + (data.message || 'Не удалось создать платёж'));
+                        } else {
+                            alert('Ошибка при создании платежа: ' + (data.message || 'Неизвестная ошибка'));
+                        }
                     }
                 } else {
                     const errorData = await response.json();
-                    alert('Ошибка при создании платежа: ' + (errorData.error || 'Неизвестная ошибка'));
+                    if (tg.showAlert) {
+                        tg.showAlert('❌ Ошибка: ' + (errorData.error || 'Неизвестная ошибка'));
+                    } else {
+                        alert('Ошибка: ' + (errorData.error || 'Неизвестная ошибка'));
+                    }
                 }
             } catch (error) {
                 console.error('Error initiating subscription:', error);
-                alert('Ошибка при попытке оформления подписки');
+                if (tg.showAlert) {
+                    tg.showAlert('❌ Ошибка подключения к серверу');
+                } else {
+                    alert('Ошибка при попытке оформления подписки');
+                }
             }
         }
 
