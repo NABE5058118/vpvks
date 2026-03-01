@@ -356,7 +356,7 @@ class BusinessLogicService:
                     # Создаём username для Marzban
                     username = f"user_{user_id}"
                     
-                    # Формируем payload для Marzban
+                    # 🔴 Формируем payload с inbounds как раньше!
                     protocols = ["VLESS Reality", "Trojan TLS"]
                     payload = {
                         "username": username,

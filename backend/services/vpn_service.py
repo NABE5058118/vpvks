@@ -303,14 +303,6 @@ class VPNService:
     def create_marzban_user_with_payload(self, user_id: int, payload: dict):
         """
         Создание пользователя в Marzban с готовым payload
-        
-        :param user_id: ID пользователя в Telegram
-        :param payload: Словарь с параметрами:
-            - username: имя пользователя
-            - proxies: список протоколов
-            - data_limit: лимит трафика в байтах
-            - expire: Unix timestamp истечения
-            - inbounds: настройки протоколов
         """
         try:
             username = payload.get('username', f'user_{user_id}')
@@ -319,39 +311,20 @@ class VPNService:
             existing = self.marzban.get_user(username)
             if existing.get('status') == 'success':
                 logger.info(f"User {username} already exists, updating...")
-                # Обновляем существующего
                 result = self.marzban.modify_user(
                     username,
                     data_limit=payload.get('data_limit'),
-                    expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400)
+                    expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400),
+                    inbounds=payload.get('inbounds')
                 )
                 return result
             
-            # Получаем доступные inbounds из Marzban
-            inbounds_response = self.marzban.get_inbounds()
-            available_inbounds = inbounds_response.get('inbounds', {}) if isinstance(inbounds_response, dict) else {}
-            
-            logger.info(f"Available inbounds: {available_inbounds}")
-            
-            # Формируем список inbounds для пользователя
-            user_inbounds = {}
-            
-            # VLESS
-            if 'vless' in available_inbounds and len(available_inbounds['vless']) > 0:
-                user_inbounds['vless'] = [available_inbounds['vless'][0]['tag']] if isinstance(available_inbounds['vless'][0], dict) else ['VLESS Reality']
-            
-            # Trojan
-            if 'trojan' in available_inbounds and len(available_inbounds['trojan']) > 0:
-                user_inbounds['trojan'] = [available_inbounds['trojan'][0]['tag']] if isinstance(available_inbounds['trojan'][0], dict) else ['Trojan TLS']
-            
-            logger.info(f"User inbounds: {user_inbounds}")
-            
-            # Создаём нового пользователя через Marzban API с inbounds
+            # Создаём нового пользователя с inbounds из payload
             result = self.marzban.create_user(
                 username=username,
                 data_limit=payload.get('data_limit', 10 * 1024**3),
                 expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400),
-                inbounds=user_inbounds
+                inbounds=payload.get('inbounds')  # Передаём inbounds напрямую!
             )
             
             return result

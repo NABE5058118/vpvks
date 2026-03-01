@@ -293,6 +293,42 @@ class MarzbanClient:
             logger.error(f"Error removing user: {e}")
             return {"status": "error", "message": str(e)}
 
+    def modify_user(self, username: str, data_limit: int = None, expire_days: int = None, inbounds: dict = None) -> dict:
+        """Модификация пользователя (продление, изменение лимита, inbounds)"""
+        token = self.get_token()
+        if not token:
+            return {"status": "error", "message": "Failed to get token"}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            payload = {}
+            
+            if data_limit is not None:
+                payload["data_limit"] = data_limit
+                
+            if expire_days is not None:
+                import time
+                expire_timestamp = int(time.time()) + (expire_days * 86400)
+                payload["expire"] = expire_timestamp
+                
+            if inbounds is not None:
+                payload["inbounds"] = inbounds
+            
+            logger.info(f"Modifying user {username} with payload: {payload}")
+            
+            response = requests.put(
+                f"{self.base_url}/api/user/{username}",
+                headers=headers,
+                json=payload,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            return {"status": "success", "data": response.json()}
+        except Exception as e:
+            logger.error(f"Error modifying user: {e}")
+            return {"status": "error", "message": str(e)}
+
     def get_user(self, username: str) -> dict:
         """Получение информации о пользователе"""
         token = self.get_token()
