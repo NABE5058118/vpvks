@@ -28,8 +28,8 @@ async def send_expiration_reminder(context: ContextTypes.DEFAULT_TYPE):
     try:
         # Импортируем модель пользователя
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from backend.models.user import User as UserModel
-        from backend.database.db_config import db
+        from database.models.user_model import User as UserModel
+        from database.db_config import db
 
         # Получаем всех пользователей
         users = UserModel.get_all_users()
@@ -211,7 +211,7 @@ async def send_broadcast_message(message_text: str, exclude_admins: bool = True)
         import sys
         import os
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from backend.models.user import User as UserModel
+        from database.models.user_model import User as UserModel
         
         users = UserModel.get_all_users()
         

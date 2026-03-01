@@ -2,8 +2,11 @@
 """
 Проверка истечения подписок и отправка уведомлений
 Запускается ежедневно в 10:00
+<<<<<<< Updated upstream
 
 Уведомления отправляются за 5, 3, 2, 1 дня до истечения и в день истечения
+=======
+>>>>>>> Stashed changes
 """
 
 import os
@@ -12,6 +15,7 @@ import logging
 from datetime import datetime, timedelta
 import requests
 
+<<<<<<< Updated upstream
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -20,10 +24,18 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, '/app')
 
 # Инициализация Flask app для доступа к БД
+=======
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+sys.path.insert(0, '/app')
+
+>>>>>>> Stashed changes
 from server import app
 from database.db_config import db
 from database.models.user_model import User as UserModel
 
+<<<<<<< Updated upstream
 # Telegram Bot Token
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8321727057:AAGJJwoVRoG7wYZQPfN9-q-IM4mHA82g2cU')
 
@@ -35,6 +47,13 @@ def send_telegram_message(chat_id: int, text: str):
         "text": text,
         "parse_mode": "Markdown"
     }
+=======
+BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8321727057:AAGJJwoVRoG7wYZQPfN9-q-IM4mHA82g2cU')
+
+def send_telegram_message(chat_id: int, text: str):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+>>>>>>> Stashed changes
     try:
         response = requests.post(url, json=data, timeout=10)
         return response.status_code == 200
@@ -43,6 +62,7 @@ def send_telegram_message(chat_id: int, text: str):
         return False
 
 def check_expirations():
+<<<<<<< Updated upstream
     """Проверка истечения подписок и отправка уведомлений"""
     logger.info("🔔 Запуск проверки истекающих подписок...")
     
@@ -51,11 +71,19 @@ def check_expirations():
             # Получаем всех пользователей
             users = UserModel.query.all()
             
+=======
+    logger.info("🔔 Запуск проверки истекающих подписок...")
+
+    with app.app_context():
+        try:
+            users = UserModel.query.all()
+>>>>>>> Stashed changes
             now = datetime.utcnow()
             today = datetime.utcnow().date()
             sent_count = 0
             skipped_count = 0
             total_count = len(users)
+<<<<<<< Updated upstream
             
             for user in users:
                 # Пропускаем если нет даты окончания подписки
@@ -73,6 +101,20 @@ def check_expirations():
                 
                 # Определяем тип уведомления
                 # Уведомляем за 5, 3, 2, 1 дня и в день истечения
+=======
+
+            for user in users:
+                if not user.subscription_end_date:
+                    continue
+
+                if user.last_expiration_reminder_sent == today:
+                    skipped_count += 1
+                    continue
+
+                delta = user.subscription_end_date - now
+                days_left = max(0, delta.days)
+
+>>>>>>> Stashed changes
                 notification_type = None
                 if days_left == 5:
                     notification_type = '5_days'
@@ -84,6 +126,7 @@ def check_expirations():
                     notification_type = '1_day'
                 elif days_left == 0:
                     notification_type = '0_days'
+<<<<<<< Updated upstream
                 
                 # Отправляем уведомление если подходит условие
                 if notification_type:
@@ -92,20 +135,35 @@ def check_expirations():
                     
                     if success:
                         # Обновляем дату последнего уведомления
+=======
+
+                if notification_type:
+                    message = get_notification_message(notification_type)
+                    success = send_telegram_message(user.id, message)
+
+                    if success:
+>>>>>>> Stashed changes
                         user.last_expiration_reminder_sent = today
                         db.session.commit()
                         sent_count += 1
                         logger.info(f"✅ Уведомление отправлено пользователю {user.id} (осталось дней: {days_left})")
                     else:
                         logger.warning(f"⚠️ Не удалось отправить уведомление пользователю {user.id}")
+<<<<<<< Updated upstream
             
             logger.info(f"✅ Проверка завершена: всего {total_count}, отправлено {sent_count}, пропущено {skipped_count}")
             
+=======
+
+            logger.info(f"✅ Проверка завершена: всего {total_count}, отправлено {sent_count}, пропущено {skipped_count}")
+
+>>>>>>> Stashed changes
         except Exception as e:
             logger.error(f"❌ Ошибка при отправке уведомлений: {e}", exc_info=True)
             db.session.rollback()
 
 def get_notification_message(notification_type: str) -> str:
+<<<<<<< Updated upstream
     """Получение текста уведомления"""
     messages = {
         '5_days': (
@@ -150,6 +208,14 @@ def get_notification_message(notification_type: str) -> str:
             "3. Доступ восстановится автоматически\n\n"
             "💡 Мы сохранили ваши данные!"
         )
+=======
+    messages = {
+        '5_days': "💳 **Напоминание от VPVKS**\n\nВаша подписка истекает через **5 дней**!\n\nНе ждите последнего момента — продлите сейчас:\n1. Откройте Mini App командой /app\n2. Перейдите в раздел «Оплатить»\n3. Выберите тариф и оплатите\n\n💡 Тарифы от 110₽/месяц\n🔒 Мгновенная активация после оплаты",
+        '3_days': "⏰ **Напоминание от VPVKS**\n\nВаша подписка истекает через **3 дня**!\n\nЧтобы продолжить пользоваться VPN без перерывов:\n1. Откройте Mini App командой /app\n2. Перейдите в раздел «Оплатить»\n3. Выберите тариф и оплатите\n\n💡 Продление сейчас сохранит вашу скидку!",
+        '2_days': "⏳ **Напоминание VPVKS**\n\nВаша подписка истекает через **2 дня**!\n\nПродлите сейчас чтобы не потерять доступ:\n👉 /app\n\n💰 Тарифы от 110₽/месяц",
+        '1_day': "⚠️ **Срочно! VPVKS**\n\nВаша подписка истекает **завтра**!\n\nНе оставайтесь без защиты — продлите прямо сейчас:\n👉 /app\n\n💰 Тарифы от 110₽/месяц",
+        '0_days': "🚫 **Подписка истекла! VPVKS**\n\nВаша подписка истекла **сегодня**.\n\nДля возобновления доступа к VPN:\n1. Откройте Mini App: /app\n2. Оплатите любой тариф\n3. Доступ восстановится автоматически\n\n💡 Мы сохранили ваши данные!"
+>>>>>>> Stashed changes
     }
     return messages.get(notification_type, '')
 
