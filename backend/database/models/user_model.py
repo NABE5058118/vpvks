@@ -30,6 +30,9 @@ class User(db.Model):
     connection_count = db.Column(db.Integer, default=0)
     suspicious_activity = db.Column(db.Boolean, default=False)
 
+    # Notification tracking
+    last_expiration_reminder_sent = db.Column(db.Date, nullable=True)  # Дата последнего уведомления об истечении
+
     def to_dict(self):
         """Convert user object to dictionary"""
         return {
@@ -47,7 +50,9 @@ class User(db.Model):
             # Anti-Sharing fields
             'last_connected_ip': self.last_connected_ip,
             'connection_count': self.connection_count,
-            'suspicious_activity': self.suspicious_activity
+            'suspicious_activity': self.suspicious_activity,
+            # Notification tracking
+            'last_expiration_reminder_sent': self.last_expiration_reminder_sent.isoformat() if self.last_expiration_reminder_sent else None
         }
 
     def add_connection_log(self, connected=True):
