@@ -640,36 +640,47 @@
                 if (statusResponse.ok) {
                     const statusData = await statusResponse.json();
                     if (statusData.status === 'success') {
-                        // Теперь все ключи бесплатные и бессрочные!
-                        document.getElementById('status-text').textContent = '✅ Активно';
-                        document.getElementById('expiry-date').textContent = 'Бесплатно / Бессрочно';
-                        
-                        // Обновляем дату истечения если есть
                         const subscription = statusData.subscription;
-                        if (subscription && subscription.expires_at) {
-                            const expireDate = new Date(subscription.expires_at);
-                            const now = new Date();
-                            const daysLeft = Math.floor((expireDate - now) / (1000 * 60 * 60 * 24));
+                        
+                        // Обновляем статус в зависимости от состояния подписки
+                        if (subscription.status === 'active') {
+                            document.getElementById('status-text').textContent = '✅ Активно';
+                            document.getElementById('expiry-date').textContent = 'Подписка активна';
                             
-                            if (daysLeft > 3650) {
-                                document.getElementById('expire-date-display').textContent = 'Никогда (бессрочно)';
-                            } else if (daysLeft > 0) {
-                                document.getElementById('expire-date-display').textContent = `Через ${daysLeft} дн.`;
+                            // Обновляем дату истечения если есть
+                            if (subscription.expires_at) {
+                                const expireDate = new Date(subscription.expires_at);
+                                const now = new Date();
+                                const daysLeft = Math.floor((expireDate - now) / (1000 * 60 * 60 * 24));
+
+                                if (daysLeft > 365) {
+                                    document.getElementById('expire-date-display').textContent = `Более года`;
+                                } else if (daysLeft > 0) {
+                                    document.getElementById('expire-date-display').textContent = `Через ${daysLeft} дн.`;
+                                } else {
+                                    document.getElementById('expire-date-display').textContent = 'Истекает сегодня';
+                                }
                             } else {
-                                document.getElementById('expire-date-display').textContent = 'Истекло';
+                                document.getElementById('expire-date-display').textContent = 'Бессрочно';
                             }
+                        } else if (subscription.status === 'expired') {
+                            document.getElementById('status-text').textContent = '❌ Истекло';
+                            document.getElementById('expiry-date').textContent = 'Требуется оплата';
+                            document.getElementById('expire-date-display').textContent = '—';
                         } else {
-                            document.getElementById('expire-date-display').textContent = 'Никогда';
+                            document.getElementById('status-text').textContent = '❌ Нет подписки';
+                            document.getElementById('expiry-date').textContent = 'Оплатите тариф';
+                            document.getElementById('expire-date-display').textContent = '—';
                         }
                     } else {
-                        document.getElementById('status-text').textContent = '⚠️ Не активно';
-                        document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Ключи"';
+                        document.getElementById('status-text').textContent = '⚠️ Ошибка';
+                        document.getElementById('expiry-date').textContent = 'Попробуйте позже';
                         document.getElementById('expire-date-display').textContent = '—';
                     }
                 } else {
                     console.error('Failed to fetch status:', statusResponse.statusText);
                     document.getElementById('status-text').textContent = '⚠️ Ошибка';
-                    document.getElementById('expiry-date').textContent = 'Получите ключ в разделе "Ключи"';
+                    document.getElementById('expiry-date').textContent = 'Попробуйте позже';
                     document.getElementById('expire-date-display').textContent = '—';
                 }
             } catch (error) {
@@ -679,6 +690,12 @@
 
         // Переключение экранов и навигации
         function switchScreen(screenId) {
+            // ПРОВЕРКА: Если переходим на экран ключей - проверяем подписку
+            if (screenId === 'keys-screen') {
+                checkSubscriptionAndShowKeys();
+                return;
+            }
+            
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -691,10 +708,52 @@
                     item.classList.add('active');
                 }
             });
+        }
 
-            // Если открыли экран ключей - сразу загружаем V2Ray
-            if (screenId === 'keys-screen') {
-                // Можно автоматически показать инструкцию
+        // Проверка подписки перед показом ключей
+        async function checkSubscriptionAndShowKeys() {
+            const userId = tg.initDataUnsafe?.user?.id || '699469085';
+            
+            try {
+                const statusResponse = await fetch(`/api/vpn/status/${userId}`);
+                const statusData = await statusResponse.json();
+                
+                if (statusData.status === 'success') {
+                    const subscription = statusData.subscription;
+                    
+                    // Если подписка не активна - показываем экран тарифов
+                    if (subscription.status === 'expired' || subscription.status === 'no_subscription') {
+                        // Переключаем на экран тарифов
+                        switchScreen('tariff-screen');
+                        
+                        // Показываем alert
+                        if (tg.showAlert) {
+                            tg.showAlert('⚠️ Доступ к ключам доступен только после оплаты тарифа.\n\nПожалуйста, выберите и оплатите тариф чтобы продолжить.');
+                        } else {
+                            alert('⚠️ Доступ к ключам доступен только после оплаты тарифа. Пожалуйста, выберите и оплатите тариф.');
+                        }
+                        return;
+                    }
+                }
+                
+                // Если подписка активна - показываем экран ключей
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.getElementById('keys-screen').classList.add('active');
+                
+                // Активируем навигацию
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(item => {
+                    if (item.onclick.toString().includes('keys-screen')) {
+                        item.classList.add('active');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error checking subscription:', error);
+                // При ошибке всё равно показываем ключи
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('keys-screen').classList.add('active');
             }
         }
 

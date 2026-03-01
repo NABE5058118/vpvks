@@ -143,6 +143,15 @@ class VPNService:
                 from models.user import User
                 user = User.create(user_data)
 
+            # 🔴 ПРОВЕРКА: Активна ли подписка
+            if not user.subscription_end_date or user.subscription_end_date < datetime.utcnow():
+                logger.warning(f"User {user_id} has no active subscription")
+                return {
+                    "status": "error",
+                    "message": "Подписка не активна. Пожалуйста, оплатите тариф.",
+                    "code": "no_subscription"
+                }
+
             # Все ключи бесплатные и бессрочные
             # Тарифы (все с большим сроком - 10 лет = 3650 дней)
             tariffs = {
