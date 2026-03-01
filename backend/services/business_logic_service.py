@@ -339,7 +339,6 @@ class BusinessLogicService:
                 # 🔴 СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ В MARZBAN
                 try:
                     from services.vpn_service import vpn_service
-                    from datetime import datetime, timedelta
                     
                     # Определяем лимит трафика в зависимости от тарифа
                     traffic_mapping = {
