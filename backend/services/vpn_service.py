@@ -172,6 +172,12 @@ class VPNService:
             # Включаем inbound автоматически перед созданием пользователя
             self._enable_marzban_inbounds()
 
+            # 🔴 Добавляем inbounds для пользователя
+            inbounds = {
+                "vless": ["VLESS Reality"],
+                "trojan": ["Trojan TLS"]
+            }
+
             # Проверка, существует ли уже пользователь
             existing_user = self.marzban.get_user(username)
             if existing_user.get("status") == "success":
@@ -234,6 +240,9 @@ class VPNService:
             )
 
             if result.get("status") == "success":
+                # 🔴 Добавляем inbounds после создания
+                self.marzban.modify_user(username, inbounds=inbounds)
+                
                 subscription_url = self.marzban.get_subscription_url(username)
 
                 # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL

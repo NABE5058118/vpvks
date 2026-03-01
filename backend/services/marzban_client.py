@@ -137,7 +137,11 @@ class MarzbanClient:
                 "username": username,
                 "proxies": protocols,
                 "data_limit": data_limit,
-                "expire": expire_timestamp  # Явно передаём timestamp
+                "expire": expire_timestamp,
+                "inbounds": {
+                    "vless": ["VLESS Reality"],
+                    "trojan": ["Trojan TLS"]
+                }
             }
             
             logger.info(f"Final payload: {payload}")
