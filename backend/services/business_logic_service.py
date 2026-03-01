@@ -92,9 +92,9 @@ class BusinessLogicService:
 
             # Define pricing based on plan type (in RUB)
             pricing = {
-                'month': {'price': 99, 'description': '1 месяц подписки', 'days': 30},
-                'quarter': {'price': 299, 'description': '3 месяца подписки', 'days': 90},
-                'halfyear': {'price': 599, 'description': '6 месяцев подписки', 'days': 180}
+                'month': {'price': 1, 'description': '1 месяц подписки', 'days': 30},
+                'quarter': {'price': 1, 'description': '3 месяца подписки', 'days': 90},
+                'halfyear': {'price': 1, 'description': '6 месяцев подписки', 'days': 180}
             }
 
             if plan_type not in pricing:
