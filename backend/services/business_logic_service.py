@@ -84,6 +84,8 @@ class BusinessLogicService:
         """Process payment for subscription plans via YooKassa"""
         try:
             from models.user import User
+            from config.tariffs import get_tariff_by_id
+
             user = User.get_by_id(user_id)
             if not user:
                 return {
@@ -91,26 +93,19 @@ class BusinessLogicService:
                     'message': f'User with ID {user_id} does not exist'
                 }
 
-            # Define pricing based on plan type (in RUB)
-            pricing = {
-                'month': {'price': 99, 'description': '1 месяц подписки', 'days': 30},
-                'quarter': {'price': 299, 'description': '3 месяца подписки', 'days': 90},
-                'halfyear': {'price': 599, 'description': '6 месяцев подписки', 'days': 180}
-            }
-
-            if plan_type not in pricing:
+            # Get tariff from configuration
+            tariff = get_tariff_by_id(plan_type)
+            if not tariff:
                 return {
                     'status': 'error',
                     'message': 'Invalid plan type'
                 }
 
-            plan = pricing[plan_type]
-
             # Create payment via YooKassa
             payment_data = {
-                'amount': plan['price'],
-                'currency': 'RUB',
-                'description': plan['description'],
+                'amount': tariff['price'],
+                'currency': tariff['currency'],
+                'description': f"{tariff['name']} ({tariff['description']}, {tariff['data_limit_gb']}GB)",
                 'user_id': user_id,
                 'return_url': 'https://vpvks.ru/payment-success'
             }
@@ -122,7 +117,8 @@ class BusinessLogicService:
 
             return {
                 'status': 'success',
-                'payment': payment_result
+                'payment': payment_result,
+                'tariff': tariff
             }
         except Exception as e:
             return {
@@ -185,7 +181,7 @@ class BusinessLogicService:
                     'status': 'error',
                     'message': 'User not found'
                 }
-            
+
             # Determine subscription status
             if not user.subscription_end_date:
                 subscription_status = 'no_subscription'
@@ -200,17 +196,19 @@ class BusinessLogicService:
                     days_left = 0
                 else:
                     subscription_status = 'active'
-            
+
             # Get VPN connection status
             vpn_status = self.vpn_service.get_connection_status(user_id)
-            
+
             return {
                 'status': 'success',
                 'subscription': {
                     'status': subscription_status,
                     'expires_at': user.subscription_end_date.isoformat() if user.subscription_end_date else None,
                     'days_left': days_left,
-                    'trial_used': user.trial_used
+                    'trial_used': user.trial_used,
+                    'data_limit_gb': user.data_limit_gb,
+                    'used_traffic_gb': user.used_traffic_gb
                 },
                 'vpn': vpn_status
             }
@@ -222,31 +220,21 @@ class BusinessLogicService:
 
     def get_available_plans(self):
         """Get available subscription plans"""
+        from config.tariffs import get_all_tariffs
+        
+        tariffs = get_all_tariffs()
         return [
             {
-                'id': 'month',
-                'name': '1 месяц',
-                'price': 110,
-                'currency': 'RUB',
-                'duration_days': 30,
-                'description': '30 дней подписки'
-            },
-            {
-                'id': '4months',
-                'name': '4 месяца',
-                'price': 290,
-                'currency': 'RUB',
-                'duration_days': 120,
-                'description': '120 дней подписки'
-            },
-            {
-                'id': '12months',
-                'name': '12 месяцев',
-                'price': 500,
-                'currency': 'RUB',
-                'duration_days': 365,
-                'description': '365 дней подписки (выгодная цена)'
+                'id': tariff['id'],
+                'name': tariff['name'],
+                'price': tariff['price'],
+                'currency': tariff['currency'],
+                'duration_days': tariff['days'],
+                'description': tariff['description'],
+                'data_limit_gb': tariff['data_limit_gb'],
+                'popular': tariff.get('popular', False)
             }
+            for tariff in tariffs
         ]
 
     def activate_subscription_for_user(self, user_id):
@@ -295,9 +283,20 @@ class BusinessLogicService:
 
                 # Convert Decimal to float/int for mapping
                 amount_float = float(latest_payment.amount)
-                days_to_add = duration_mapping.get(amount_float, 30)  # Default to 30 days
+                
+                # Get tariff from configuration
+                from config.tariffs import get_tariff_by_price
+                tariff = get_tariff_by_price(amount_float)
+                
+                if tariff:
+                    days_to_add = tariff['days']
+                    data_limit_gb = tariff['data_limit_gb']
+                else:
+                    days_to_add = 30  # Default
+                    data_limit_gb = 10  # Default 10GB
 
                 logger.info(f"Determined subscription duration: {days_to_add} days for amount {amount_float}")
+                logger.info(f"Data limit: {data_limit_gb}GB")
 
                 # Update user subscription
                 from database.db_config import db
@@ -310,12 +309,17 @@ class BusinessLogicService:
                     print(f"Extended subscription end date for user {user_id}: {user.subscription_end_date}")
                     logger.info(f"Extended subscription end date for user {user_id}: {user.subscription_end_date}")
 
+                # Update user traffic limit
+                user.data_limit_gb = data_limit_gb
+                print(f"Set data limit for user {user_id}: {data_limit_gb}GB")
+                logger.info(f"Set data limit for user {user_id}: {data_limit_gb}GB")
+
                 # Update payment status to succeeded if it wasn't already
                 if latest_payment.status != 'succeeded':
                     latest_payment.update_status('succeeded')
                     print(f"Updated payment {latest_payment.id} status to succeeded")
                     logger.info(f"Updated payment {latest_payment.id} status to succeeded")
-                
+
                 # Ensure payment status is set to succeeded for test payments
                 latest_payment.status = 'succeeded'
                 latest_payment.paid = True
@@ -340,47 +344,42 @@ class BusinessLogicService:
                 try:
                     from services.vpn_service import VPNService
                     vpn_service = VPNService()
-                    
-                    # Определяем лимит трафика в зависимости от тарифа
-                    traffic_mapping = {
-                        99: 10 * 1024**3,     # 10 GB для 1 месяца
-                        299: 50 * 1024**3,    # 50 GB для 3 месяцев
-                        599: 100 * 1024**3    # 100 GB для 6 месяцев
-                    }
-                    data_limit = traffic_mapping.get(amount_float, 10 * 1024**3)
-                    
+
                     # Вычисляем expire timestamp
                     expire_date = user.subscription_end_date
                     expire_timestamp = int(expire_date.timestamp())
-                    
+
                     # Создаём username для Marzban
                     username = f"user_{user_id}"
+
+                    # 🔴 Формируем payload с inbounds и лимитом трафика
+                    data_limit_bytes = data_limit_gb * 1024**3
                     
-                    # 🔴 Формируем payload с inbounds как раньше!
                     protocols = ["VLESS Reality", "Trojan TLS"]
                     payload = {
                         "username": username,
                         "proxies": protocols,
-                        "data_limit": data_limit,
+                        "data_limit": data_limit_bytes,
                         "expire": expire_timestamp,
                         "inbounds": {
                             "vless": ["VLESS Reality"],
                             "trojan": ["Trojan TLS"]
                         }
                     }
-                    
+
                     logger.info(f"Creating Marzban user {username} with payload: {payload}")
-                    
+                    logger.info(f"Data limit: {data_limit_gb}GB ({data_limit_bytes} bytes)")
+
                     # Создаём пользователя через VPN Service
                     result = vpn_service.create_marzban_user_with_payload(user_id, payload)
-                    
+
                     if result.get('status') == 'success':
                         logger.info(f"✅ Marzban user created: {username}")
                         print(f"✅ Marzban user created: {username}")
                     else:
                         logger.warning(f"⚠️ Marzban user creation failed: {result.get('message', 'Unknown error')}")
                         print(f"⚠️ Marzban user creation failed: {result.get('message', 'Unknown error')}")
-                    
+
                 except Exception as e:
                     logger.error(f"❌ Error creating Marzban user: {e}")
                     print(f"❌ Error creating Marzban user: {e}")

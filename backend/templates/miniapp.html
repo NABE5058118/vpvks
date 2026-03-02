@@ -501,6 +501,10 @@
                     <div>Истекает:</div>
                     <div><strong id="expire-date-display">Никогда</strong></div>
                 </div>
+                <div class="info-line">
+                    <div>Трафик:</div>
+                    <div><strong id="traffic-display">— / — GB</strong></div>
+                </div>
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;" onclick="loadUserData()">
                     <span></span> Обновить статус
                 </button>
@@ -580,16 +584,19 @@
                     <div class="tariff-card">
                         <div class="tariff-name"> 1 месяц </div>
                         <div class="tariff-price">99 ₽</div>
+                        <div class="tariff-desc">📊 10 GB трафика</div>
                         <button class="buy-btn" onclick="initiateSubscription('month')">Купить</button>
                     </div>
                     <div class="tariff-card popular">
                         <div class="tariff-name"> 3 месяца </div>
                         <div class="tariff-price">299 ₽</div>
+                        <div class="tariff-desc">📊 50 GB трафика</div>
                         <button class="buy-btn" onclick="initiateSubscription('quarter')">Купить</button>
                     </div>
                     <div class="tariff-card">
                         <div class="tariff-name"> 6 месяцев</div>
                         <div class="tariff-price">599 ₽</div>
+                        <div class="tariff-desc">📊 100 GB трафика</div>
                         <button class="buy-btn" onclick="initiateSubscription('halfyear')">Купить</button>
                     </div>
                 </div>
@@ -667,24 +674,44 @@
                             document.getElementById('status-text').textContent = '❌ Истекло';
                             document.getElementById('expiry-date').textContent = 'Требуется оплата';
                             document.getElementById('expire-date-display').textContent = '—';
+                            document.getElementById('traffic-display').textContent = '— / — GB';
                         } else {
                             document.getElementById('status-text').textContent = '❌ Нет подписки';
                             document.getElementById('expiry-date').textContent = 'Оплатите тариф';
                             document.getElementById('expire-date-display').textContent = '—';
+                            document.getElementById('traffic-display').textContent = '— / — GB';
                         }
+                        
+                        // Обновляем отображение трафика
+                        updateTrafficDisplay(subscription);
                     } else {
                         document.getElementById('status-text').textContent = '⚠️ Ошибка';
                         document.getElementById('expiry-date').textContent = 'Попробуйте позже';
                         document.getElementById('expire-date-display').textContent = '—';
+                        document.getElementById('traffic-display').textContent = '— / — GB';
                     }
                 } else {
                     console.error('Failed to fetch status:', statusResponse.statusText);
                     document.getElementById('status-text').textContent = '⚠️ Ошибка';
                     document.getElementById('expiry-date').textContent = 'Попробуйте позже';
                     document.getElementById('expire-date-display').textContent = '—';
+                    document.getElementById('traffic-display').textContent = '— / — GB';
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
+            }
+        }
+
+        // Функция для отображения трафика
+        function updateTrafficDisplay(subscription) {
+            const dataLimit = subscription.data_limit_gb || 0;
+            const usedTraffic = subscription.used_traffic_gb || 0;
+            
+            if (dataLimit > 0) {
+                const percentage = Math.min((usedTraffic / dataLimit) * 100, 100);
+                document.getElementById('traffic-display').textContent = `${usedTraffic.toFixed(1)} / ${dataLimit} GB (${percentage.toFixed(0)}%)`;
+            } else {
+                document.getElementById('traffic-display').textContent = 'Безлимитный';
             }
         }
 

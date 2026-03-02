@@ -151,22 +151,25 @@ class VPNService:
                     "code": "no_subscription"
                 }
 
-            # Все ключи бесплатные и бессрочные
-            # Тарифы (все с большим сроком - 10 лет = 3650 дней)
-            tariffs = {
-                "start": {"limit": 10 * 1024**3, "days": 3650},      # 10 GB, 10 лет
-                "standard": {"limit": 50 * 1024**3, "days": 3650},   # 50 GB, 10 лет
-                "premium": {"limit": 100 * 1024**3, "days": 3650},   # 100 GB, 10 лет
-            }
-
-            tariff_data = tariffs.get(tariff, tariffs["standard"])
+            # Получаем лимит трафика из БД пользователя
             username = f"user_{user_id}"
+            
+            # Проверяем существующего пользователя в БД
+            from database.db_config import db
+            from database.models.user_model import User as UserModel
+            
+            db_user = UserModel.query.filter_by(id=user_id).first()
+            data_limit_bytes = None
+            
+            if db_user and db_user.data_limit_gb:
+                data_limit_bytes = int(db_user.data_limit_gb * 1024**3)
+                logger.info(f"Using data limit from DB: {db_user.data_limit_gb}GB")
+            else:
+                # Default лимит если не указан
+                data_limit_bytes = 10 * 1024**3  # 10GB
+                logger.info(f"Using default data limit: 10GB")
 
-            # Вычисляем expire дату (10 лет от сейчас) используя UTC
-            expire_date = datetime.utcnow() + timedelta(days=3650)
-            expire_timestamp = int(expire_date.timestamp())
-
-            logger.info(f"Expire date: {expire_date}, timestamp: {expire_timestamp}")
+            logger.info(f"Data limit for user {user_id}: {data_limit_bytes} bytes")
 
             # Включаем inbound автоматически перед созданием пользователя
             self._enable_marzban_inbounds()
@@ -205,7 +208,7 @@ class VPNService:
                         "expire_timestamp": expire_timestamp
                     }
                 else:
-                    # Пользователь есть, но ссылки нет - продлеваем на 10 лет
+                    # Пользователь есть, но ссылки нет - продлеваем
                     result = self.marzban.extend_user(username, 3650)
                     subscription_url = self.marzban.get_subscription_url(username)
 
@@ -228,10 +231,24 @@ class VPNService:
                         "message": "Extended existing user"
                     }
 
-            # Создание пользователя (бесплатно и на 10 лет)
+            # Вычисляем expire timestamp из БД
+            from database.db_config import db
+            from database.models.user_model import User as UserModel
+            
+            db_user = UserModel.query.filter_by(id=user_id).first()
+            if db_user and db_user.subscription_end_date:
+                expire_timestamp = int(db_user.subscription_end_date.timestamp())
+            else:
+                # Default: 1 год от сейчас
+                import time
+                expire_timestamp = int(time.time()) + (365 * 86400)
+
+            logger.info(f"Expire timestamp: {expire_timestamp}")
+
+            # Создание пользователя с лимитом трафика
             result = self.marzban.create_user_with_expire(
                 username=username,
-                data_limit=tariff_data["limit"],
+                data_limit=data_limit_bytes,
                 expire_timestamp=expire_timestamp,
                 protocols={"vless": {}, "trojan": {}}
             )
@@ -239,13 +256,10 @@ class VPNService:
             if result.get("status") == "success":
                 # 🔴 Добавляем inbounds после создания
                 self.marzban.modify_user(username, inbounds=inbounds)
-                
+
                 subscription_url = self.marzban.get_subscription_url(username)
 
                 # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL
-                from database.db_config import db
-                from database.models.user_model import User as UserModel
-
                 user = UserModel.query.filter_by(id=user_id).first()
                 if user:
                     user.subscription_end_date = datetime.fromtimestamp(expire_timestamp)
@@ -257,7 +271,7 @@ class VPNService:
                     "protocol": "v2ray",
                     "subscription_url": subscription_url,
                     "username": username,
-                    "data_limit": tariff_data["limit"],
+                    "data_limit": data_limit_bytes,
                     "expire_timestamp": expire_timestamp
                 }
             else:

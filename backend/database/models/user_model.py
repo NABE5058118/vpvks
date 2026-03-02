@@ -33,6 +33,10 @@ class User(db.Model):
     # Notification tracking
     last_expiration_reminder_sent = db.Column(db.Date, nullable=True)  # Дата последнего уведомления об истечении
 
+    # Traffic tracking
+    data_limit_gb = db.Column(db.Float, nullable=True)  # Лимит трафика в GB
+    used_traffic_gb = db.Column(db.Float, default=0.0)  # Использованный трафик в GB
+
     def to_dict(self):
         """Convert user object to dictionary"""
         return {
@@ -52,7 +56,10 @@ class User(db.Model):
             'connection_count': self.connection_count,
             'suspicious_activity': self.suspicious_activity,
             # Notification tracking
-            'last_expiration_reminder_sent': self.last_expiration_reminder_sent.isoformat() if self.last_expiration_reminder_sent else None
+            'last_expiration_reminder_sent': self.last_expiration_reminder_sent.isoformat() if self.last_expiration_reminder_sent else None,
+            # Traffic tracking
+            'data_limit_gb': self.data_limit_gb,
+            'used_traffic_gb': self.used_traffic_gb
         }
 
     def add_connection_log(self, connected=True):

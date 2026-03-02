@@ -1,8 +1,3 @@
-"""
-Marzban Client
-API клиент для взаимодействия с Marzban панелью (V2Ray/Trojan/Reality)
-"""
-
 import requests
 import time
 import os
@@ -44,15 +39,6 @@ class MarzbanClient:
 
     def create_user(self, username: str, data_limit: int, expire_days: int,
                     protocols: dict = None, inbounds: dict = None) -> dict:
-        """Создание пользователя в Marzban
-
-        Args:
-            username: Имя пользователя
-            data_limit: Лимит трафика в байтах
-            expire_days: Срок действия в днях
-            protocols: Протоколы
-            inbounds: Inbounds для пользователя (например, {'vless': ['VLESS Reality'], 'trojan': ['Trojan TLS']})
-        """
         token = self.get_token()
         if not token:
             return {"status": "error", "message": "Failed to get token"}
@@ -102,14 +88,6 @@ class MarzbanClient:
 
     def create_user_with_expire(self, username: str, data_limit: int, expire_timestamp: int,
                     protocols: dict = None) -> dict:
-        """Создание пользователя с явным expire timestamp
-        
-        Args:
-            username: Имя пользователя
-            data_limit: Лимит трафика в байтах
-            expire_timestamp: Unix timestamp когда истекает
-            protocols: Протоколы
-        """
         token = self.get_token()
         if not token:
             return {"status": "error", "message": "Failed to get token"}
