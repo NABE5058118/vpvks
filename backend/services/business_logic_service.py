@@ -285,18 +285,14 @@ class BusinessLogicService:
                 amount_float = float(latest_payment.amount)
                 
                 # Get tariff from configuration
-                from config.tariffs import get_tariff_by_price
-                tariff = get_tariff_by_price(amount_float)
+                from config.tariffs import get_tariff_by_id
+                tariff = get_tariff_by_id('month')  # Только один тариф - 1 месяц
                 
-                if tariff:
-                    days_to_add = tariff['days']
-                    data_limit_gb = tariff['data_limit_gb']
-                else:
-                    days_to_add = 30  # Default
-                    data_limit_gb = 10  # Default 10GB
+                days_to_add = tariff['days']
+                data_limit_gb = tariff['data_limit_gb']  # 0 = безлимитно
 
-                logger.info(f"Determined subscription duration: {days_to_add} days for amount {amount_float}")
-                logger.info(f"Data limit: {data_limit_gb}GB")
+                logger.info(f"Determined subscription duration: {days_to_add} days")
+                logger.info(f"Data limit: {'Безлимитный' if data_limit_gb == 0 else f'{data_limit_gb}GB'}")
 
                 # Update user subscription
                 from database.db_config import db

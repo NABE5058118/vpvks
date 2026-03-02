@@ -159,17 +159,17 @@ class VPNService:
             from database.models.user_model import User as UserModel
             
             db_user = UserModel.query.filter_by(id=user_id).first()
-            data_limit_bytes = None
+            data_limit_bytes = 0  # 0 = безлимитный трафик
             
-            if db_user and db_user.data_limit_gb:
+            if db_user and db_user.data_limit_gb and db_user.data_limit_gb > 0:
                 data_limit_bytes = int(db_user.data_limit_gb * 1024**3)
                 logger.info(f"Using data limit from DB: {db_user.data_limit_gb}GB")
             else:
-                # Default лимит если не указан
-                data_limit_bytes = 10 * 1024**3  # 10GB
-                logger.info(f"Using default data limit: 10GB")
+                # Безлимитный трафик по умолчанию
+                data_limit_bytes = 0
+                logger.info(f"Using unlimited traffic (data_limit = 0)")
 
-            logger.info(f"Data limit for user {user_id}: {data_limit_bytes} bytes")
+            logger.info(f"Data limit for user {user_id}: {'Безлимитный' if data_limit_bytes == 0 else f'{data_limit_bytes} bytes'}")
 
             # Включаем inbound автоматически перед созданием пользователя
             self._enable_marzban_inbounds()
