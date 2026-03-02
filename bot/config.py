@@ -11,6 +11,7 @@ load_dotenv('.env')
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:5000')
 MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://example.com/miniapp')
+CHANNEL_URL = os.getenv('CHANNEL_URL', 'https://t.me/vpvks_news')
 
 # Admin user IDs (comma-separated list in environment variable)
 ADMIN_IDS_STR = os.getenv('ADMIN_USER_IDS', '')

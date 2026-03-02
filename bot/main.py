@@ -4,7 +4,7 @@ from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS
+from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS, CHANNEL_URL
 
 # Настройка логирования
 logging.basicConfig(
@@ -81,6 +81,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
             InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
+        ],
+        [
+            InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
         ]
     ]
 
@@ -361,6 +364,66 @@ async def renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await renew_vpn_key(update, context)
 
 
+async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показать главное меню с кнопками"""
+    user_id = update.effective_user.id
+    
+    # Get user balance
+    balance = 0
+    try:
+        timeout = aiohttp.ClientTimeout(total=10, connect=5)
+        connector = aiohttp.TCPConnector(ssl=False)
+
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    balance = data.get('balance', 0)
+    except Exception as e:
+        logger.error(f"Error getting balance: {e}")
+
+    # Get username
+    user = update.effective_user
+    username = user.username or user.first_name or "Пользователь"
+
+    keyboard = [
+        [
+            InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
+        ],
+        [
+            InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
+            InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
+        ],
+        [
+            InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    welcome_message = (
+        f"👋 Привет, @{username}!\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n"
+        f"💰 Баланс: {balance} ₽\n\n"
+        "🔐 Для получения VPN ключа:\n"
+        "1. Откройте Mini App\n"
+        "2. Выберите тариф\n"
+        "3. Оплатите подписку\n"
+        "4. Получите ключ подключения\n\n"
+        "💳 Тарифы от 99₽/месяц\n"
+        "🚀 VLESS Reality + Trojan TLS\n"
+        "🌍 Сервер: Стокгольм, Швеция\n\n"
+        "Нажми кнопку ниже чтобы открыть приложение 👇"
+    )
+
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=welcome_message,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+
+
 async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle menu callbacks from inline keyboard"""
     query = update.callback_query
@@ -370,7 +433,13 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     user_id = update.effective_user.id
 
     # Import here to avoid scope issues
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
+    # Обработка кнопки "Назад"
+    if callback_data == "back":
+        await show_main_menu(update, context)
+        await query.delete_message()
+        return
 
     # Обработка инструкции по VPN
     if callback_data == "vpn_instruction":
@@ -393,20 +462,32 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         except Exception as e:
             logger.error(f"Error getting balance: {e}")
 
+        keyboard = [
+            [InlineKeyboardButton("◀️ Назад", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
         await query.edit_message_text(
             f"💰 Ваш баланс\n\n"
             f"ID: {user_id}\n"
             f"Баланс: {balance} ₽\n\n"
             f"🎉 Все ключи бесплатные и бессрочные!\n"
-            f"💜 Вы можете поддержать проект в Mini App"
+            f"💜 Вы можете поддержать проект в Mini App",
+            reply_markup=reply_markup
         )
         return
 
     if callback_data == "menu_tariff":
+        keyboard = [
+            [InlineKeyboardButton("◀️ Назад", callback_data="back")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
         await query.edit_message_text(
             f"💜 Поддержка проекта\n\n"
             f"🎉 Все ключи бесплатные и бессрочные!\n\n"
-            f"Откройте Mini App чтобы поддержать проект 👇"
+            f"Откройте Mini App чтобы поддержать проект 👇",
+            reply_markup=reply_markup
         )
         return
 
