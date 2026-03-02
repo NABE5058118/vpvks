@@ -1108,6 +1108,7 @@ def payment_success():
         <title>Оплата прошла успешно!</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="refresh" content="2;url=https://t.me/relatevpnbot">
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <style>
             body {
@@ -1138,6 +1139,8 @@ def payment_success():
                 cursor: pointer;
                 font-size: 16px;
                 margin-top: 20px;
+                text-decoration: none;
+                display: inline-block;
             }
             button:hover {
                 background-color: #45a049;
@@ -1149,28 +1152,19 @@ def payment_success():
             <div class="success-icon">✓</div>
             <h1>Оплата прошла успешно!</h1>
             <p>Ваша подписка активирована. Спасибо за покупку!</p>
-            <p>Возврат в бот через <span id="countdown">3</span> сек...</p>
-            <button onclick="returnToBot()">Вернуться в бот сейчас</button>
+            <p>Перенаправление в бот через <span id="countdown">3</span> сек...</p>
+            <a href="https://t.me/relatevpnbot" class="button">Вернуться в бот сейчас</a>
         </div>
 
         <script>
-            // Initialize Telegram WebApp
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-
-            function returnToBot() {
-                // Close the web app to return to the bot
-                tg.close();
-            }
-
-            // Auto-close after 3 seconds
+            // Auto-redirect after 3 seconds
             let countdown = 3;
             const timer = setInterval(function() {
                 countdown--;
                 document.getElementById('countdown').textContent = countdown;
                 if (countdown <= 0) {
                     clearInterval(timer);
-                    tg.close();
+                    window.location.href = 'https://t.me/relatevpnbot';
                 }
             }, 1000);
         </script>
