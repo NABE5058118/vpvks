@@ -826,6 +826,40 @@ def remove_marzban_user_route(user_id):
         return jsonify({'error': str(e)}), 500
 
 
+@routes_bp.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """Удаление пользователя из БД (сначала платежи, потом пользователь)"""
+    try:
+        from database.db_config import db
+        from database.models.payment_model import Payment as PaymentModel
+        from database.models.user_model import User as UserModel
+        
+        # Сначала удаляем все платежи пользователя
+        payments = PaymentModel.query.filter_by(user_id=user_id).all()
+        payments_count = len(payments)
+        for payment in payments:
+            db.session.delete(payment)
+        
+        # Теперь удаляем пользователя
+        user = UserModel.query.filter_by(id=user_id).first()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            logger.info(f"✅ Пользователь {user_id} удалён (включая {payments_count} платежей)")
+            return jsonify({
+                'status': 'success',
+                'message': f'Пользователь {user_id} удалён',
+                'deleted_payments': payments_count
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"❌ Error deleting user {user_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @routes_bp.route('/api/marzban/extend/<int:user_id>', methods=['POST'])
 def extend_marzban_user_route(user_id):
     """Продление подписки пользователя в Marzban"""

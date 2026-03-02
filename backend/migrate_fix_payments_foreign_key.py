@@ -21,11 +21,9 @@ def fix_payments_foreign_key():
     
     with app.app_context():
         try:
-            # Проверяем текущий constraint
-            print("📝 Проверка текущего foreign key constraint...")
-            
             with db.engine.connect() as conn:
-                # Получаем имя constraint
+                # Получаем имя текущего constraint
+                print("📝 Проверка текущего foreign key constraint...")
                 result = conn.execute(text("""
                     SELECT conname
                     FROM pg_constraint
@@ -38,6 +36,19 @@ def fix_payments_foreign_key():
                 if row:
                     constraint_name = row[0]
                     print(f"ℹ️  Найден constraint: {constraint_name}")
+                    
+                    # Проверяем есть ли уже ON DELETE CASCADE
+                    check_result = conn.execute(text(f"""
+                        SELECT confdeltype
+                        FROM pg_constraint
+                        WHERE conname = '{constraint_name}'
+                    """))
+                    check_row = check_result.fetchone()
+                    
+                    # confdeltype: 'a' = NO ACTION, 'r' = RESTRICT, 'c' = CASCADE, 'n' = SET NULL, 'd' = SET DEFAULT
+                    if check_row and check_row[0] == 'c':
+                        print("✅ CASCADE уже настроен, миграция не требуется")
+                        return True
                     
                     # Удаляем старый constraint
                     print(f"📝 Удаление старого constraint: {constraint_name}...")
@@ -57,12 +68,23 @@ def fix_payments_foreign_key():
                     conn.commit()
                     print("✅ Новый constraint добавлен")
                 else:
-                    print("⚠️  Foreign key constraint не найден")
+                    print("⚠️  Foreign key constraint не найден, создаём новый...")
+                    conn.execute(text("""
+                        ALTER TABLE payments
+                        ADD CONSTRAINT payments_user_id_fkey
+                        FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                    """))
+                    conn.commit()
+                    print("✅ Constraint создан")
             
             print("\n✅ Миграция успешно выполнена!")
             print("\n📊 Теперь при удалении пользователя:")
             print("   - Все его платежи будут автоматически удалены (CASCADE)")
             print("   - Ошибка foreign key constraint больше не появится")
+            print("\n💡 Также доступен API endpoint: DELETE /api/users/<user_id>")
+            print("   Он сначала удаляет платежи, потом пользователя")
             
         except Exception as e:
             print(f"❌ Ошибка при выполнении миграции: {e}")

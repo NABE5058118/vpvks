@@ -501,10 +501,6 @@
                     <div>Истекает:</div>
                     <div><strong id="expire-date-display">Никогда</strong></div>
                 </div>
-                <div class="info-line">
-                    <div>Трафик:</div>
-                    <div><strong id="traffic-display" style="color: #00ff64;">♾️ Безлимитный</strong></div>
-                </div>
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;" onclick="loadUserData()">
                     <span></span> Обновить статус
                 </button>
@@ -580,27 +576,20 @@
         <!-- Экран: Тарифы -->
         <div class="screen" id="tariff-screen">
             <div class="glass-panel">
-                <div class="text-center mb-20" style="color: #aaa; font-size: 14px;">
-                    Простая оплата по месяцам<br>
-                    Безлимитный трафик
-                </div>
                 <div class="tariff-grid">
                     <div class="tariff-card">
                         <div class="tariff-name"> 1 месяц </div>
                         <div class="tariff-price">1 ₽</div>
-                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
                         <button class="buy-btn" onclick="initiateSubscription('month')">Купить</button>
                     </div>
                     <div class="tariff-card popular">
                         <div class="tariff-name"> 3 месяца </div>
                         <div class="tariff-price">3 ₽</div>
-                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
                         <button class="buy-btn" onclick="initiateSubscription('quarter')">Купить</button>
                     </div>
                     <div class="tariff-card">
                         <div class="tariff-name"> 12 месяцев</div>
                         <div class="tariff-price">5 ₽</div>
-                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
                         <button class="buy-btn" onclick="initiateSubscription('year')">Купить</button>
                     </div>
                 </div>
