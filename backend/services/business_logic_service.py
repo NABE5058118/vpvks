@@ -283,13 +283,20 @@ class BusinessLogicService:
 
                 # Convert Decimal to float/int for mapping
                 amount_float = float(latest_payment.amount)
+
+                # Get tariff from configuration by price
+                from config.tariffs import get_tariff_by_price
+                tariff = get_tariff_by_price(amount_float)
                 
-                # Get tariff from configuration
-                from config.tariffs import get_tariff_by_id
-                tariff = get_tariff_by_id('month')  # Только один тариф - 1 месяц
-                
-                days_to_add = tariff['days']
-                data_limit_gb = tariff['data_limit_gb']  # 0 = безлимитно
+                if tariff:
+                    days_to_add = tariff['days']
+                    data_limit_gb = tariff['data_limit_gb']
+                    logger.info(f"Tariff found: {tariff['name']}, {days_to_add} days")
+                else:
+                    # Default to 1 month if price not found
+                    days_to_add = 30
+                    data_limit_gb = 0
+                    logger.warning(f"Tariff not found for amount {amount_float}, using default 30 days")
 
                 logger.info(f"Determined subscription duration: {days_to_add} days")
                 logger.info(f"Data limit: {'Безлимитный' if data_limit_gb == 0 else f'{data_limit_gb}GB'}")
