@@ -4,7 +4,7 @@ Handles VPN connection logic with Marzban (V2Ray/Trojan/Reality)
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import logging
 
@@ -128,7 +128,6 @@ class VPNService:
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
         """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
-            from datetime import datetime, timedelta
             from database.models.user_model import User as UserModel
 
             # Check if user exists in PostgreSQL
@@ -190,7 +189,6 @@ class VPNService:
                     # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL для существующего пользователя
                     from database.db_config import db
                     from database.models.user_model import User as UserModel
-                    from datetime import datetime
 
                     user = UserModel.query.filter_by(id=user_id).first()
                     if user and expire_timestamp and expire_timestamp > 0:
@@ -214,7 +212,6 @@ class VPNService:
                     # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL после продления
                     from database.db_config import db
                     from database.models.user_model import User as UserModel
-                    from datetime import datetime
 
                     user = UserModel.query.filter_by(id=user_id).first()
                     if user:
@@ -248,7 +245,6 @@ class VPNService:
                 # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL
                 from database.db_config import db
                 from database.models.user_model import User as UserModel
-                from datetime import datetime
 
                 user = UserModel.query.filter_by(id=user_id).first()
                 if user:

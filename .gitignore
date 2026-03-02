@@ -91,6 +91,7 @@ htmlcov/
 .tox/
 coverage.xml
 *.cover
+tests/
 
 # ===========================================
 # Docker

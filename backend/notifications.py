@@ -4,9 +4,17 @@ Module for sending notifications to Telegram users
 
 import asyncio
 import logging
-from telegram import Bot
 import os
 from dotenv import load_dotenv
+
+# Try to import telegram, handle if not available
+try:
+    from telegram import Bot
+    TELEGRAM_AVAILABLE = True
+except ImportError:
+    TELEGRAM_AVAILABLE = False
+    Bot = None
+    logging.warning("Telegram module not installed. Notifications disabled.")
 
 # Load environment variables
 load_dotenv()
@@ -20,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     def __init__(self):
+        if not TELEGRAM_AVAILABLE:
+            logger.warning("Telegram module not available. Notifications disabled.")
+            self.bot = None
+            return
+            
         if not BOT_TOKEN:
             logger.error("TELEGRAM_BOT_TOKEN not set in environment variables!")
             raise ValueError("TELEGRAM_BOT_TOKEN not set in environment variables!")
@@ -28,6 +41,10 @@ class NotificationService:
 
     async def send_payment_success_notification(self, user_id: int, amount: float = 0, days: int = 0):
         """Send notification to user about successful payment"""
+        if not TELEGRAM_AVAILABLE:
+            logger.warning(f"Telegram not available, skipping notification to user {user_id}")
+            return
+            
         logger.info(f"Attempting to send payment success notification to user {user_id}")
         try:
             message = (
@@ -49,6 +66,10 @@ class NotificationService:
 
     async def send_subscription_activated_notification(self, user_id: int, days_added: int = None):
         """Send notification to user about subscription activation"""
+        if not TELEGRAM_AVAILABLE:
+            logger.warning(f"Telegram not available, skipping notification to user {user_id}")
+            return
+            
         logger.info(f"Attempting to send subscription activated notification to user {user_id}, days added: {days_added}")
         try:
             if days_added:
@@ -63,7 +84,7 @@ class NotificationService:
                     "🔒 Теперь вы можете использовать VPN без ограничений.\n\n"
                     "Для проверки статуса подписки используйте команду /status"
                 )
-                
+
             await self.bot.send_message(chat_id=user_id, text=message)
             logger.info(f"Subscription activated notification sent to user {user_id}")
         except Exception as e:

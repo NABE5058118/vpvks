@@ -851,11 +851,10 @@ def marzban_webhook():
         
         if not username or not username.startswith('user_'):
             return jsonify({'status': 'ignored'})
-        
+
         user_id = int(username.replace('user_', ''))
-        
-        # Получаем актуальные данные из Marzban
-        from services.vpn_service import vpn_service
+
+        # Получаем актуальные данные из Marzban (используем глобальный vpn_service)
         marzban_user = vpn_service.marzban.get_user(username)
         
         if marzban_user.get('status') == 'success':

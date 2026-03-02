@@ -76,7 +76,8 @@ temp/
 .pytest_cache/
 .coverage
 htmlcov/
-tests/
+# Tests are now committed
+# tests/
 
 # ===========================================
 # PM2 (не используется)

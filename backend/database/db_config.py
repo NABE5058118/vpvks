@@ -9,8 +9,9 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables only if not already loaded
+if not os.getenv('DATABASE_URL'):
+    load_dotenv()
 
 # Create database instance
 db = SQLAlchemy()

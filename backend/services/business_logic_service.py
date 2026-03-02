@@ -31,16 +31,17 @@ class BusinessLogicService:
         try:
             # Create user in the database
             user = User.create(user_data)
-            
+
             # Set up trial period if applicable
             if not user_data.get('has_paid', False):
                 # Grant 7-day trial
                 user.subscription_end_date = datetime.now() + timedelta(days=7)
                 user.trial_used = True
-                
-                # Update user in db
-                User.users_db[user.id] = user
-            
+
+                # Commit changes to database
+                from database.db_config import db
+                db.session.commit()
+
             return {
                 'status': 'success',
                 'user': user.to_dict()
