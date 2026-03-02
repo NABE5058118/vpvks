@@ -1149,26 +1149,30 @@ def payment_success():
             <div class="success-icon">✓</div>
             <h1>Оплата прошла успешно!</h1>
             <p>Ваша подписка активирована. Спасибо за покупку!</p>
-            <p>Вернитесь в бота, чтобы проверить статус подписки.</p>
-            <button onclick="returnToBot()">Вернуться в бот</button>
+            <p>Возврат в бот через <span id="countdown">3</span> сек...</p>
+            <button onclick="returnToBot()">Вернуться в бот сейчас</button>
         </div>
 
         <script>
             // Initialize Telegram WebApp
             const tg = window.Telegram.WebApp;
             tg.ready();
-            
+
             function returnToBot() {
                 // Close the web app to return to the bot
                 tg.close();
             }
-            
-            // Auto-close after 5 seconds if in Telegram Web App
-            setTimeout(function() {
-                if(tg.isClosingConfirmationEnabled) {
-                    tg.enableClosingConfirmation();
+
+            // Auto-close after 3 seconds
+            let countdown = 3;
+            const timer = setInterval(function() {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    tg.close();
                 }
-            }, 5000);
+            }, 1000);
         </script>
     </body>
     </html>
