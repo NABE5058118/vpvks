@@ -584,15 +584,24 @@
                     Простая оплата по месяцам<br>
                     Безлимитный трафик
                 </div>
-                <div class="tariff-grid" style="grid-template-columns: 1fr;">
-                    <div class="tariff-card popular" style="text-align: center;">
-                        <div class="tariff-name" style="font-size: 24px;"> 1 месяц </div>
-                        <div class="tariff-price" style="font-size: 36px; justify-content: center;">99 ₽</div>
-                        <div class="tariff-desc" style="font-size: 14px;">♾️ Безлимитный трафик</div>
-                        <div class="tariff-desc" style="font-size: 14px;">📅 30 дней подписки</div>
-                        <button class="buy-btn" onclick="initiateSubscription('month')" style="margin-top: 20px;">
-                            💳 Оплатить 99₽
-                        </button>
+                <div class="tariff-grid">
+                    <div class="tariff-card">
+                        <div class="tariff-name"> 1 месяц </div>
+                        <div class="tariff-price">1 ₽</div>
+                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
+                        <button class="buy-btn" onclick="initiateSubscription('month')">Купить</button>
+                    </div>
+                    <div class="tariff-card popular">
+                        <div class="tariff-name"> 3 месяца </div>
+                        <div class="tariff-price">3 ₽</div>
+                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
+                        <button class="buy-btn" onclick="initiateSubscription('quarter')">Купить</button>
+                    </div>
+                    <div class="tariff-card">
+                        <div class="tariff-name"> 12 месяцев</div>
+                        <div class="tariff-price">5 ₽</div>
+                        <div class="tariff-desc">♾️ Безлимитный трафик</div>
+                        <button class="buy-btn" onclick="initiateSubscription('year')">Купить</button>
                     </div>
                 </div>
             </div>

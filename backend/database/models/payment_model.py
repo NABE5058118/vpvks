@@ -15,7 +15,7 @@ class Payment(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)  # Amount with 2 decimal places
     currency = db.Column(db.String(3), default='RUB')  # Currency code
     description = db.Column(db.Text, nullable=True)  # Payment description
-    user_id = db.Column(db.BigInteger, db.ForeignKey('users.id'), nullable=False)  # Link to user
+    user_id = db.Column(db.BigInteger, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)  # Link to user
     status = db.Column(db.String(20), default='pending')  # Payment status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
