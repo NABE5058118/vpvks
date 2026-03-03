@@ -22,9 +22,14 @@
           "show": false,
           "dest": "www.microsoft.com:443",
           "xver": 0,
-          "serverNames": ["www.microsoft.com", "azure.microsoft.com", "office.microsoft.com"],
+          "serverNames": ["www.microsoft.com", "docs.python.org", "cdn.jsdelivr.net", "npmjs.com"],
           "privateKey": "OBGPuDLRkb0Cbae2t84LacjkcWY38TBw9umx1vKUHyk",
-          "shortIds": ["", "abc123def456"]
+          "shortIds": ["", "a1b2c3d4", "e5f6g7h8", "11223344"],
+          "spiderX": "/search?q=how+to+install+python+package"
+        },
+        "sockopt": {
+          "tcpNoDelay": true,
+          "tcpKeepAliveInterval": 30
         }
       },
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
@@ -44,29 +49,10 @@
             "keyFile": "/etc/letsencrypt/live/vpvks.ru/privkey.pem"
           }],
           "alpn": ["h2", "http/1.1"]
-        }
-      },
-      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
-    },
-    {
-      "tag": "Hysteria 2",
-      "listen": "0.0.0.0",
-      "port": 8444,
-      "protocol": "hysteria2",
-      "settings": {
-        "clients": [],
-        "up": "1000Mbps",
-        "down": "1000Mbps"
-      },
-      "streamSettings": {
-        "network": "udp",
-        "security": "tls",
-        "tlsSettings": {
-          "certificates": [{
-            "certificateFile": "/etc/letsencrypt/live/vpvks.ru/fullchain.pem",
-            "keyFile": "/etc/letsencrypt/live/vpvks.ru/privkey.pem"
-          }],
-          "alpn": ["h3"]
+        },
+        "sockopt": {
+          "tcpNoDelay": true,
+          "tcpKeepAliveInterval": 30
         }
       },
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
