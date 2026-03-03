@@ -177,7 +177,8 @@ class VPNService:
             # 🔴 Добавляем inbounds для пользователя
             inbounds = {
                 "vless": ["VLESS Reality"],
-                "trojan": ["Trojan TLS"]
+                "trojan": ["Trojan TLS"],
+                "hysteria2": ["Hysteria 2"]
             }
 
             # Проверка, существует ли уже пользователь

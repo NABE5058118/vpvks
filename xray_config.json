@@ -47,6 +47,29 @@
         }
       },
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    },
+    {
+      "tag": "Hysteria 2",
+      "listen": "0.0.0.0",
+      "port": 8444,
+      "protocol": "hysteria2",
+      "settings": {
+        "clients": [],
+        "up": "1000Mbps",
+        "down": "1000Mbps"
+      },
+      "streamSettings": {
+        "network": "udp",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [{
+            "certificateFile": "/etc/letsencrypt/live/vpvks.ru/fullchain.pem",
+            "keyFile": "/etc/letsencrypt/live/vpvks.ru/privkey.pem"
+          }],
+          "alpn": ["h3"]
+        }
+      },
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     }
   ],
   "outbounds": [

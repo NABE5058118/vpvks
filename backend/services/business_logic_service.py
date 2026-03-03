@@ -357,8 +357,8 @@ class BusinessLogicService:
 
                     # 🔴 Формируем payload с inbounds и лимитом трафика
                     data_limit_bytes = data_limit_gb * 1024**3
-                    
-                    protocols = ["VLESS Reality", "Trojan TLS"]
+
+                    protocols = ["VLESS Reality", "Trojan TLS", "Hysteria 2"]
                     payload = {
                         "username": username,
                         "proxies": protocols,
@@ -366,7 +366,8 @@ class BusinessLogicService:
                         "expire": expire_timestamp,
                         "inbounds": {
                             "vless": ["VLESS Reality"],
-                            "trojan": ["Trojan TLS"]
+                            "trojan": ["Trojan TLS"],
+                            "hysteria2": ["Hysteria 2"]
                         }
                     }
 
