@@ -36,6 +36,8 @@ class User(db.Model):
     # Traffic tracking
     data_limit_gb = db.Column(db.Float, nullable=True)  # Лимит трафика в GB
     used_traffic_gb = db.Column(db.Float, default=0.0)  # Использованный трафик в GB
+    subscription_url = db.Column(db.Text, nullable=True)  # Ссылка на VPN подписку (сохраняется)
+    vpn_key_generated = db.Column(db.Boolean, default=False)  # Сгенерирован ли ключ
 
     def to_dict(self):
         """Convert user object to dictionary"""
@@ -59,7 +61,10 @@ class User(db.Model):
             'last_expiration_reminder_sent': self.last_expiration_reminder_sent.isoformat() if self.last_expiration_reminder_sent else None,
             # Traffic tracking
             'data_limit_gb': self.data_limit_gb,
-            'used_traffic_gb': self.used_traffic_gb
+            'used_traffic_gb': self.used_traffic_gb,
+            # VPN Key tracking
+            'subscription_url': self.subscription_url,
+            'vpn_key_generated': self.vpn_key_generated
         }
 
     def add_connection_log(self, connected=True):

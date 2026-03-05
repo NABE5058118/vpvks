@@ -713,19 +713,19 @@
         // Проверка подписки перед показом ключей
         async function checkSubscriptionAndShowKeys() {
             const userId = tg.initDataUnsafe?.user?.id || '699469085';
-            
+
             try {
                 const statusResponse = await fetch(`/api/vpn/status/${userId}`);
                 const statusData = await statusResponse.json();
-                
+
                 if (statusData.status === 'success') {
                     const subscription = statusData.subscription;
-                    
+
                     // Если подписка не активна - показываем экран тарифов
                     if (subscription.status === 'expired' || subscription.status === 'no_subscription') {
                         // Переключаем на экран тарифов
                         switchScreen('tariff-screen');
-                        
+
                         // Показываем alert
                         if (tg.showAlert) {
                             tg.showAlert('⚠️ Доступ к ключам доступен только после оплаты тарифа.\n\nПожалуйста, выберите и оплатите тариф чтобы продолжить.');
@@ -734,9 +734,12 @@
                         }
                         return;
                     }
+                    
+                    // Если подписка активна - загружаем ключ автоматически
+                    await loadV2RayKeyOnScreenOpen();
                 }
-                
-                // Если подписка активна - показываем экран ключей
+
+                // Показываем экран ключей
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 document.getElementById('keys-screen').classList.add('active');
@@ -764,75 +767,111 @@
                 const btn = event.target;
                 const originalText = btn.innerHTML;
 
-                // ПРОВЕРКА: Активна ли подписка
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> Загрузка ключа...';
+
+                // Получаем ключ через новый API endpoint
+                const response = await fetch(`/api/vpn/key/${userId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (response.status === 403) {
+                    // Подписка не активна
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    showPaymentSection();
+                    
+                    if (tg.showAlert) {
+                        tg.showAlert('⚠️ Подписка не активна. Пожалуйста, оплатите тариф.');
+                    }
+                    return;
+                }
+
+                if (data.status === 'success' && data.subscription_url) {
+                    // Ключ получен успешно
+                    displayV2RayKey(data.subscription_url);
+                } else {
+                    // Ошибка
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    
+                    if (tg.showAlert) {
+                        tg.showAlert(`❌ Ошибка: ${data.message || 'Не удалось получить ключ'}`);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error getting V2Ray key:', error);
+                const btn = event.target;
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                
+                if (tg.showAlert) {
+                    tg.showAlert('❌ Произошла ошибка при получении ключа');
+                }
+            }
+        }
+
+        // Отображение V2Ray ключа
+        function displayV2RayKey(subscriptionUrl) {
+            // Генерируем QR код
+            const qrContainer = document.getElementById('v2ray-qrcode-image');
+            qrContainer.innerHTML = '';
+
+            new QRCode(qrContainer, {
+                text: subscriptionUrl,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Показываем ссылку
+            document.getElementById('v2ray-link-text').textContent = subscriptionUrl;
+            document.getElementById('v2ray-subscription-container').style.display = 'block';
+
+            // Скрываем кнопку получения
+            const btn = document.querySelector('button[onclick="getV2RayKey()"]');
+            if (btn) {
+                btn.style.display = 'none';
+            }
+
+            // Показываем сообщение
+            if (tg.showAlert) {
+                tg.showAlert('✅ Ключ успешно загружен!\n\nТеперь вы можете скопировать ссылку или отсканировать QR код.');
+            }
+        }
+
+        // Автоматическая загрузка ключа при открытии экрана
+        async function loadV2RayKeyOnScreenOpen() {
+            try {
+                const userId = tg.initDataUnsafe?.user?.id || '699469085';
+                
+                // Проверяем подписку
                 const statusResponse = await fetch(`/api/vpn/status/${userId}`);
                 const statusData = await statusResponse.json();
-                
+
                 if (statusData.status === 'success') {
                     const subscription = statusData.subscription;
-                    if (subscription.status === 'expired' || subscription.status === 'no_subscription') {
-                        // Подписка не активна - показываем экран оплаты
-                        showPaymentSection();
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
-                        
-                        if (tg.showAlert) {
-                            tg.showAlert('⚠️ Ваша подписка истекла или отсутствует.\n\nПожалуйста, оплатите подписку чтобы продолжить пользоваться VPN.');
-                        } else {
-                            alert('⚠️ Ваша подписка истекла или отсутствует. Пожалуйста, оплатите подписку.');
+                    
+                    // Если подписка активна - загружаем ключ
+                    if (subscription.status === 'active') {
+                        const keyResponse = await fetch(`/api/vpn/key/${userId}`);
+                        const keyData = await keyResponse.json();
+
+                        if (keyData.status === 'success' && keyData.subscription_url) {
+                            displayV2RayKey(keyData.subscription_url);
                         }
-                        return;
                     }
                 }
-
-                btn.disabled = true;
-                btn.innerHTML = '<span>⏳</span> Генерация ключа...';
-
-                // Получаем IP и User-Agent для anti-sharing
-                let ip = '';
-                let userAgent = navigator.userAgent;
-                
-                try {
-                    const ipResponse = await fetch('https://api.ipify.org?format=json');
-                    const ipData = await ipResponse.json();
-                    ip = ipData.ip;
-                } catch (e) {
-                    console.log('Не удалось получить IP:', e);
-                }
-
-                // Проверяем fingerprint
-                try {
-                    const fingerprintResponse = await fetch('/api/vpn/check-fingerprint', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            ip: ip,
-                            user_agent: userAgent
-                        })
-                    });
-
-                    if (fingerprintResponse.status === 403) {
-                        const fingerprintData = await fingerprintResponse.json();
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
-                        
-                        if (tg.showAlert) {
-                            tg.showAlert(`⚠️ ${fingerprintData.message}\n\nЕсли вы пытаетесь подключиться с нового устройства — используйте команду /reset_device в боте.`);
-                        } else {
-                            alert(`⚠️ ${fingerprintData.message}`);
-                        }
-                        return;
-                    }
-                } catch (e) {
-                    console.log('Fingerprint проверка не удалась:', e);
-                    // Продолжаем даже если проверка не удалась
-                }
-
-                // Запрашиваем создание пользователя в Marzban
-                const response = await fetch('/api/marzban/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+            } catch (error) {
+                console.error('Error auto-loading key:', error);
+            }
+        }
                     body: JSON.stringify({ user_id: userId, tariff: 'standard' })
                 });
 

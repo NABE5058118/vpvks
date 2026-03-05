@@ -97,6 +97,65 @@ def vpn_status(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@routes_bp.route('/api/vpn/key/<int:user_id>', methods=['GET'])
+def get_vpn_key(user_id):
+    """Get or generate VPN subscription key for user"""
+    try:
+        from database.db_config import db
+        from database.models.user_model import User as UserModel
+        from services.vpn_service import VPNService
+        
+        # Получаем пользователя
+        user = UserModel.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Проверяем активную подписку
+        if not user.is_subscription_active():
+            return jsonify({
+                'status': 'error',
+                'message': 'Подписка не активна. Пожалуйста, оплатите тариф.'
+            }), 403
+        
+        # Если ключ уже сохранён - возвращаем его
+        if user.subscription_url and user.vpn_key_generated:
+            logger.info(f"🔑 Returning saved subscription URL for user {user_id}")
+            return jsonify({
+                'status': 'success',
+                'subscription_url': user.subscription_url,
+                'key_generated': True
+            })
+        
+        # Генерируем новый ключ через Marzban
+        logger.info(f"🔑 Generating new subscription URL for user {user_id}")
+        vpn_service = VPNService()
+        result = vpn_service.create_marzban_user(user_id, 'standard')
+        
+        if result.get('status') == 'success':
+            subscription_url = result.get('subscription_url')
+            
+            # Сохраняем в БД
+            user.subscription_url = subscription_url
+            user.vpn_key_generated = True
+            db.session.commit()
+            
+            logger.info(f"✅ Saved subscription URL for user {user_id}")
+            
+            return jsonify({
+                'status': 'success',
+                'subscription_url': subscription_url,
+                'key_generated': True
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': result.get('message', 'Failed to generate key')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in get_vpn_key: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 @routes_bp.route('/api/vpn/check-fingerprint', methods=['POST'])
 def check_fingerprint():
