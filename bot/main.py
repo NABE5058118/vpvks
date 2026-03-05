@@ -90,16 +90,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     welcome_message = (
         f"👋 Привет, {username_display}!\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n"
-        f"💰 Баланс: {balance} ₽\n\n"
-        "🔐 Для получения VPN ключа:\n"
-        "1. Откройте Mini App\n"
-        "2. Выберите тариф\n"
-        "3. Оплатите подписку\n"
-        "4. Получите ключ подключения\n\n"
-        "💳 Тарифы от 99₽/месяц\n"
-        "🚀 VLESS Reality + Trojan TLS\n"
-        "🌍 Сервер: Стокгольм, Швеция\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n\n"
         "Нажми кнопку ниже чтобы открыть приложение 👇"
     )
 
@@ -397,16 +388,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     welcome_message = (
         f"👋 Привет, @{username}!\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n"
-        f"💰 Баланс: {balance} ₽\n\n"
-        "🔐 Для получения VPN ключа:\n"
-        "1. Откройте Mini App\n"
-        "2. Выберите тариф\n"
-        "3. Оплатите подписку\n"
-        "4. Получите ключ подключения\n\n"
-        "💳 Тарифы от 99₽/месяц\n"
-        "🚀 VLESS Reality + Trojan TLS\n"
-        "🌍 Сервер: Стокгольм, Швеция\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n\n"
         "Нажми кнопку ниже чтобы открыть приложение 👇"
     )
 
