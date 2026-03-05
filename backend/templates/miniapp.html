@@ -872,108 +872,14 @@
                 console.error('Error auto-loading key:', error);
             }
         }
-                    body: JSON.stringify({ user_id: userId, tariff: 'standard' })
-                });
-
-                const data = await response.json();
-                console.log('Marzban response:', data);
-
-                if (data.status === 'success' && data.subscription_url) {
-                    // Показываем ссылку
-                    const container = document.getElementById('v2ray-subscription-container');
-                    const linkText = document.getElementById('v2ray-link-text');
-
-                    // Полная ссылка для подписки
-                    const fullUrl = data.subscription_url.startsWith('http')
-                        ? data.subscription_url
-                        : window.location.origin + data.subscription_url;
-
-                    linkText.textContent = fullUrl;
-                    container.style.display = 'block';
-
-                    // Генерируем QR код из полной ссылки
-                    const qrContainer = document.getElementById('v2ray-qrcode-image');
-                    qrContainer.innerHTML = '';
-
-                    const qrDiv = document.createElement('div');
-                    qrDiv.id = 'v2ray-qrcode';
-                    qrContainer.appendChild(qrDiv);
-
-                    new QRCode(qrDiv, {
-                        text: fullUrl,
-                        width: 200,
-                        height: 200,
-                        colorDark: '#000000',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-
-                    btn.innerHTML = '<span>✅</span> Ключ получен!';
-                    btn.classList.remove('btn-primary');
-                    btn.classList.add('btn-secondary');
-
-                    if (tg.showNotification) {
-                        tg.showNotification({ type: 'success', message: 'Ключ V2Ray получен!' });
-                    }
-                } else if (data.message && data.message.includes('Existing user')) {
-                    // Пользователь уже существует - получаем ссылку
-                    const subscriptionResponse = await fetch(`/api/marzban/subscription/${userId}`);
-                    const subData = await subscriptionResponse.json();
-                    
-                    if (subData.status === 'success' && subData.subscription_url) {
-                        const container = document.getElementById('v2ray-subscription-container');
-                        const linkText = document.getElementById('v2ray-link-text');
-                        
-                        const fullUrl = subData.subscription_url.startsWith('http') 
-                            ? subData.subscription_url 
-                            : window.location.origin + subData.subscription_url;
-                        
-                        linkText.textContent = fullUrl;
-                        container.style.display = 'block';
-                        
-                        // Генерируем QR код
-                        const qrContainer = document.getElementById('v2ray-qrcode-image');
-                        qrContainer.innerHTML = '';
-                        
-                        const qrDiv = document.createElement('div');
-                        qrDiv.id = 'v2ray-qrcode';
-                        qrContainer.appendChild(qrDiv);
-                        
-                        new QRCode(qrDiv, {
-                            text: fullUrl,
-                            width: 200,
-                            height: 200,
-                            colorDark: '#000000',
-                            colorLight: '#ffffff',
-                            correctLevel: QRCode.CorrectLevel.M
-                        });
-                        
-                        btn.innerHTML = '<span>✅</span> Ваш ключ готов!';
-                        btn.classList.remove('btn-primary');
-                        btn.classList.add('btn-secondary');
-                    }
-                } else {
-                    throw new Error(data.message || 'Ошибка получения ключа');
-                }
-            } catch (error) {
-                console.error('Error getting V2Ray key:', error);
-                if (tg.showAlert) {
-                    tg.showAlert('Ошибка: ' + error.message);
-                } else {
-                    alert('Ошибка: ' + error.message);
-                }
-                event.target.disabled = false;
-                event.target.innerHTML = '<span>🔑</span> Получить ключ V2Ray';
-            }
-        }
 
         // Копирование V2Ray ссылки
-        async function copyV2RayLink() {
+        function copyV2RayLink() {
             const linkText = document.getElementById('v2ray-link-text');
             const subscriptionUrl = linkText.textContent.trim();
 
             try {
-                await navigator.clipboard.writeText(subscriptionUrl);
+                navigator.clipboard.writeText(subscriptionUrl);
                 if (tg.showNotification) {
                     tg.showNotification({ type: 'success', message: 'Ссылка скопирована!' });
                 } else {
@@ -992,7 +898,7 @@
         function openInBrowser() {
             const linkText = document.getElementById('v2ray-link-text');
             const subscriptionUrl = linkText.textContent.trim();
-            
+
             if (tg.openLink) {
                 tg.openLink(subscriptionUrl);
             } else {
