@@ -79,9 +79,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
-            InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
-        ],
-        [
             InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
         ]
     ]
@@ -392,9 +389,6 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
         ],
         [
-            InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
-        ],
-        [
             InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
         ]
     ]
@@ -445,36 +439,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     if callback_data == "vpn_instruction":
         from handlers.vpn_key_handler import show_vpn_instruction
         await show_vpn_instruction(update, context)
-        return
-
-    if callback_data == "menu_balance":
-        # Get balance from backend
-        balance = 0
-        try:
-            timeout = aiohttp.ClientTimeout(total=10, connect=5)
-            connector = aiohttp.TCPConnector(ssl=False)
-
-            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-                async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        balance = data.get('balance', 0)
-        except Exception as e:
-            logger.error(f"Error getting balance: {e}")
-
-        keyboard = [
-            [InlineKeyboardButton("◀️ Назад", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await query.edit_message_text(
-            f"💰 Ваш баланс\n\n"
-            f"ID: {user_id}\n"
-            f"Баланс: {balance} ₽\n\n"
-            f"🎉 Все ключи бесплатные и бессрочные!\n"
-            f"💜 Вы можете поддержать проект в Mini App",
-            reply_markup=reply_markup
-        )
         return
 
     # По умолчанию
