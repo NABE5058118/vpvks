@@ -80,7 +80,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ],
         [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
-            InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
         ],
         [
             InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
@@ -394,7 +393,6 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ],
         [
             InlineKeyboardButton("💰 Баланс", callback_data="menu_balance"),
-            InlineKeyboardButton("💜 Поддержка", callback_data="menu_tariff"),
         ],
         [
             InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
@@ -475,20 +473,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
             f"Баланс: {balance} ₽\n\n"
             f"🎉 Все ключи бесплатные и бессрочные!\n"
             f"💜 Вы можете поддержать проект в Mini App",
-            reply_markup=reply_markup
-        )
-        return
-
-    if callback_data == "menu_tariff":
-        keyboard = [
-            [InlineKeyboardButton("◀️ Назад", callback_data="back")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await query.edit_message_text(
-            f"💜 Поддержка проекта\n\n"
-            f"🎉 Все ключи бесплатные и бессрочные!\n\n"
-            f"Откройте Mini App чтобы поддержать проект 👇",
             reply_markup=reply_markup
         )
         return
