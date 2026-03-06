@@ -117,6 +117,7 @@ class PaymentService:
                     return payment_info
 
                 # Prepare payment data for YooKassa (works in both live and test modes)
+                # YooKassa will redirect to this URL after payment
                 payment_request = {
                     "amount": {
                         "value": str(payment_data.get('amount')),

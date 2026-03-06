@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата прошла успешно!</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-icon::after {
+            content: '✓';
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #1a1a2e;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #0088cc, #0066aa);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .countdown {
+            color: #999;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .countdown span {
+            color: #0088cc;
+            font-weight: 600;
+        }
+
+        .status-info {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .status-info p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .status-info strong {
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon"></div>
+        <h1>✅ Оплата прошла успешно!</h1>
+        <p>Ваша подписка активирована. Теперь вы можете пользоваться VPN без ограничений.</p>
+
+        <div class="status-info" id="status-info" style="display: none;">
+            <p><strong>Сумма:</strong> <span id="amount">-</span></p>
+            <p><strong>Срок:</strong> <span id="duration">-</span></p>
+        </div>
+
+        <button class="btn" onclick="returnToBot()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-3.5l6-4.5-6-4.5v9z"/>
+            </svg>
+            Вернуться в бот
+        </button>
+
+        <button class="btn btn-secondary" onclick="checkStatus()">
+            🔄 Проверить статус
+        </button>
+
+        <p class="countdown">
+            Автоматический возврат через <span id="countdown">5</span> сек...
+        </p>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Get user ID from Telegram
+        const userId = tg.initDataUnsafe?.user?.id;
+
+        // Get payment info from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentId = urlParams.get('payment_id');
+        const amount = urlParams.get('amount');
+        const days = urlParams.get('days');
+
+        // Show status info if available
+        if (amount || days) {
+            document.getElementById('status-info').style.display = 'block';
+            if (amount) {
+                document.getElementById('amount').textContent = amount + ' ₽';
+            }
+            if (days) {
+                document.getElementById('duration').textContent = days + ' дн.';
+            }
+        }
+
+        // Return to bot using Telegram WebApp API
+        function returnToBot() {
+            // Try to close the Mini App (returns to chat)
+            if (tg.close) {
+                tg.close();
+            } else {
+                // Fallback: open bot in new tab
+                window.open('https://t.me/relatevpnbot', '_blank');
+            }
+        }
+
+        // Check payment status by loading last payment for user
+        async function checkStatus() {
+            try {
+                let checkPaymentId = paymentId;
+                
+                // If no payment_id in URL, get the last payment for user
+                if (!checkPaymentId && userId) {
+                    const response = await fetch(`/api/payments?user_id=${userId}&limit=1`);
+                    const data = await response.json();
+                    if (data.payments && data.payments.length > 0) {
+                        checkPaymentId = data.payments[0].id;
+                    }
+                }
+
+                if (!checkPaymentId) {
+                    alert('Платежи не найдены');
+                    return;
+                }
+
+                const response = await fetch(`/api/payment/check/${checkPaymentId}`);
+                const data = await response.json();
+
+                if (data.payment_info && data.payment_info.status === 'succeeded') {
+                    alert('✅ Платёж подтверждён! Подписка активирована.');
+                    // Update UI
+                    document.querySelector('.success-icon').style.display = 'flex';
+                    document.querySelector('h1').textContent = '✅ Оплата прошла успешно!';
+                    document.querySelector('p').textContent = 'Ваша подписка активирована. Теперь вы можете пользоваться VPN без ограничений.';
+                } else if (data.payment_info && data.payment_info.status === 'pending') {
+                    alert('⏳ Платёж ещё обрабатывается. Пожалуйста, подождите.');
+                } else {
+                    alert('Статус платежа: ' + (data.payment_info?.status || 'неизвестен'));
+                }
+            } catch (error) {
+                alert('Ошибка проверки статуса: ' + error.message);
+            }
+        }
+
+        // Auto-close countdown
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                returnToBot();
+            }
+        }, 1000);
+
+        // Tell Telegram that the page is ready
+        tg.MainButton.setText('ВЕРНУТЬСЯ В БОТ');
+        tg.MainButton.show();
+        tg.MainButton.onClick(returnToBot);
+
+        // If no payment_id in URL, try to get last payment for user
+        if (!paymentId && userId) {
+            checkStatus();
+        }
+    </script>
+</body>
+</html>

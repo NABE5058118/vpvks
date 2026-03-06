@@ -550,28 +550,56 @@ def get_users():
 
 @routes_bp.route('/api/payments', methods=['GET'])
 def get_payments():
-    """Get list of all payments for admin panel"""
+    """Get list of all payments for admin panel, or payments for specific user"""
     try:
         from models.payment import Payment
-        
-        all_payments = Payment.get_recent_payments(limit=100)  # Last 100 payments
-        payments_list = []
-        
-        for payment in all_payments:
-            payment_info = {
-                'id': payment.id,
-                'amount': float(payment.amount),
-                'currency': payment.currency,
-                'description': payment.description,
-                'user_id': payment.user_id,
-                'status': payment.status,
-                'paid': payment.paid,
-                'created_at': payment.created_at.isoformat(),
-                'test': payment.test
-            }
-            payments_list.append(payment_info)
-        
-        return jsonify({'payments': payments_list})
+
+        # Check if user_id is provided (for user-specific payments)
+        user_id = request.args.get('user_id')
+        limit = request.args.get('limit', 10, type=int)
+
+        if user_id:
+            # Get payments for specific user
+            user_payments = Payment.get_payments_by_user(int(user_id))
+            # Sort by created_at descending and limit
+            user_payments = sorted(user_payments, key=lambda p: p.created_at, reverse=True)[:limit]
+            payments_list = []
+
+            for payment in user_payments:
+                payment_info = {
+                    'id': payment.id,
+                    'amount': float(payment.amount),
+                    'currency': payment.currency,
+                    'description': payment.description,
+                    'user_id': payment.user_id,
+                    'status': payment.status,
+                    'paid': payment.paid,
+                    'created_at': payment.created_at.isoformat(),
+                    'test': payment.test
+                }
+                payments_list.append(payment_info)
+
+            return jsonify({'payments': payments_list})
+        else:
+            # Get all payments (admin)
+            all_payments = Payment.get_recent_payments(limit=limit)
+            payments_list = []
+
+            for payment in all_payments:
+                payment_info = {
+                    'id': payment.id,
+                    'amount': float(payment.amount),
+                    'currency': payment.currency,
+                    'description': payment.description,
+                    'user_id': payment.user_id,
+                    'status': payment.status,
+                    'paid': payment.paid,
+                    'created_at': payment.created_at.isoformat(),
+                    'test': payment.test
+                }
+                payments_list.append(payment_info)
+
+            return jsonify({'payments': payments_list})
     except Exception as e:
         print(f"Error getting payments: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1160,76 +1188,17 @@ def check_tester(user_id):
 @routes_bp.route('/payment-success', methods=['GET'])
 def payment_success():
     """Page shown after successful payment return from YooKassa"""
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Оплата прошла успешно!</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content="2;url=https://t.me/relatevpnbot">
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 50px;
-                background-color: #f0f8ff;
-            }
-            .container {
-                max-width: 500px;
-                margin: 0 auto;
-                background: white;
-                padding: 30px;
-                border-radius: 10px;
-                box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            }
-            .success-icon {
-                font-size: 60px;
-                color: #4CAF50;
-                margin-bottom: 20px;
-            }
-            button {
-                background-color: #4CAF50;
-                color: white;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
-                margin-top: 20px;
-                text-decoration: none;
-                display: inline-block;
-            }
-            button:hover {
-                background-color: #45a049;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="success-icon">✓</div>
-            <h1>Оплата прошла успешно!</h1>
-            <p>Ваша подписка активирована. Спасибо за покупку!</p>
-            <p>Перенаправление в бот через <span id="countdown">3</span> сек...</p>
-            <a href="https://t.me/relatevpnbot" class="button">Вернуться в бот сейчас</a>
-        </div>
+    from flask import render_template
 
-        <script>
-            // Auto-redirect after 3 seconds
-            let countdown = 3;
-            const timer = setInterval(function() {
-                countdown--;
-                document.getElementById('countdown').textContent = countdown;
-                if (countdown <= 0) {
-                    clearInterval(timer);
-                    window.location.href = 'https://t.me/relatevpnbot';
-                }
-            }, 1000);
-        </script>
-    </body>
-    </html>
-    '''
+    # Get payment info from query params
+    payment_id = request.args.get('payment_id')
+    amount = request.args.get('amount')
+    days = request.args.get('days')
+
+    return render_template('payment_success.html',
+                          payment_id=payment_id,
+                          amount=amount,
+                          days=days)
 
 
 @routes_bp.route('/payment-failed', methods=['GET'])
