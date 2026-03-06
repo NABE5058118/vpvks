@@ -4,127 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Оплата VPN подписки</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background-color: #f5f5f5;
+            background-color: #0a0a0a;
+            padding: 20px;
         }
         .container {
             text-align: center;
-            background: white;
+            background: rgba(30, 30, 40, 0.9);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 238, 255, 0.2);
             max-width: 400px;
+            width: 100%;
         }
         h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
+            color: #00eeff;
+            margin-bottom: 15px;
+            font-size: 20px;
         }
         p {
-            color: #7f8c8d;
-            margin-bottom: 30px;
+            color: #aaa;
+            margin-bottom: 25px;
+            font-size: 14px;
         }
         .amount {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
-            color: #27ae60;
+            color: #4CAF50;
             margin: 20px 0;
         }
         .btn {
-            background-color: #3498db;
+            background: linear-gradient(135deg, #0088cc, #0066aa);
             color: white;
-            padding: 15px 30px;
+            padding: 16px 32px;
             border: none;
-            border-radius: 5px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 16px;
-            text-decoration: none;
-            display: inline-block;
+            font-weight: 600;
+            width: 100%;
             margin: 10px 0;
+            transition: all 0.3s;
         }
         .btn:hover {
-            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
         .ios-instruction {
-            background-color: #fff8e1;
+            background-color: rgba(255, 193, 7, 0.1);
             border-left: 4px solid #ffc107;
             padding: 15px;
             margin-top: 20px;
             text-align: left;
-            border-radius: 5px;
+            border-radius: 8px;
+            color: #ccc;
+            font-size: 13px;
         }
         .auto-redirect-info {
-            background-color: #e3f2fd;
+            background-color: rgba(0, 238, 255, 0.1);
             padding: 15px;
             margin: 20px 0;
-            border-radius: 5px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #aaa;
         }
         .countdown {
             font-weight: bold;
-            color: #2c3e50;
+            color: #00eeff;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Оплата VPN подписки</h1>
-        <p>Для оплаты нажмите на кнопку ниже:</p>
-        
-        <div class="amount">Сумма: <span id="amountDisplay">{{ amount }} {{ currency }}</span></div>
-        
+        <h1>💳 Оплата подписки</h1>
+        <p>Для оплаты нажмите на кнопку ниже</p>
+
+        <div class="amount">{{ amount }} {{ currency }}</div>
+
         <button class="btn" onclick="proceedToPayment()">Перейти к оплате</button>
-        
+
+        <button class="btn btn-secondary" onclick="returnToApp()">← Вернуться в приложение</button>
+
         <div class="auto-redirect-info">
-            <p>Если кнопка не работает, страница автоматически перенаправит вас через: <span id="countdown" class="countdown">10</span> секунд</p>
+            <p>Автоматический переход через: <span id="countdown" class="countdown">10</span> сек</p>
         </div>
-        
+
         <div class="ios-instruction">
-            <strong>Для пользователей iOS:</strong> Если кнопка не работает, нажмите и удерживайте её, затем выберите "Открыть в Safari".<br><br>
-            <strong>Альтернативный способ:</strong> Скопируйте ссылку в буфер обмена и откройте в Safari:<br>
-            <input type="text" id="paymentLink" value="{{ payment_url }}" readonly style="width: 100%; padding: 8px; margin-top: 10px;">
-            <button class="btn" onclick="copyLink()">Копировать ссылку</button>
+            <strong>💡 iOS:</strong> Если кнопка не работает, нажмите и удерживайте её, затем выберите "Открыть в Safari".<br><br>
+            <strong>Или скопируйте ссылку:</strong>
+            <input type="text" id="paymentLink" value="{{ payment_url }}" readonly onclick="this.select()">
+            <button class="btn btn-secondary" onclick="copyLink()" style="margin-top: 10px;">Копировать ссылку</button>
         </div>
     </div>
 
     <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
         const paymentUrl = "{{ payment_url }}";
         let countdown = 10;
-        
+
         function proceedToPayment() {
             // Try to open in new window/tab
             const newWindow = window.open(paymentUrl, '_blank');
-            
+
             // If popup is blocked or window couldn't be opened
             if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
                 // Fallback: redirect current window
                 window.location.href = paymentUrl;
             }
         }
-        
+
+        function returnToApp() {
+            // Close the Mini App and return to bot
+            if (tg.close) {
+                tg.close();
+            } else {
+                window.history.back();
+            }
+        }
+
         function copyLink() {
             const linkField = document.getElementById('paymentLink');
             linkField.select();
-            document.execCommand('copy');
-            alert('Ссылка скопирована в буфер обмена!');
+            
+            try {
+                document.execCommand('copy');
+                alert('✅ Ссылка скопирована!');
+            } catch (err) {
+                // Fallback for modern browsers
+                navigator.clipboard.writeText(linkField.value);
+                alert('✅ Ссылка скопирована!');
+            }
         }
-        
+
         // Auto redirect countdown
         const countdownElement = document.getElementById('countdown');
         const countdownInterval = setInterval(() => {
             countdown--;
             countdownElement.textContent = countdown;
-            
+
             if (countdown <= 0) {
                 clearInterval(countdownInterval);
-                // Try to redirect automatically
-                window.location.href = paymentUrl;
+                proceedToPayment();
             }
         }, 1000);
     </script>

@@ -117,7 +117,8 @@ class PaymentService:
                     return payment_info
 
                 # Prepare payment data for YooKassa (works in both live and test modes)
-                # YooKassa will redirect to this URL after payment
+                # IMPORTANT: YooKassa preserves query parameters in return_url
+                # So we can pass payment_id and it will be returned to us after payment
                 payment_request = {
                     "amount": {
                         "value": str(payment_data.get('amount')),
@@ -125,12 +126,13 @@ class PaymentService:
                     },
                     "confirmation": {
                         "type": "redirect",
-                        "return_url": self.return_url
+                        "return_url": self.return_url  # YooKassa will redirect here after payment
                     },
                     "capture": True,
                     "description": payment_data.get('description', f"Payment for VPN service by user {payment_data.get('user_id')}"),
                     "metadata": {
-                        "user_id": payment_data.get('user_id')
+                        "user_id": payment_data.get('user_id'),
+                        "return_url_with_id": f"{self.return_url}?payment_id=" + "{payment_id}"  # We'll update this after creation
                     }
                 }
 
@@ -139,6 +141,10 @@ class PaymentService:
 
                 # Create payment via YooKassa with idempotency key
                 yookassa_payment = YooPayment.create(payment_request, idempotency_key)
+
+                # NOW we have the payment_id - update the return_url to include it
+                # Note: YooKassa doesn't allow updating return_url after creation,
+                # so we rely on fetching the last payment by user_id in the success page
 
                 # Create payment record in database
                 payment_db = PaymentModel.create({
