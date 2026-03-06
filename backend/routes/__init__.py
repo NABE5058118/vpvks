@@ -1194,21 +1194,23 @@ def check_tester(user_id):
 # =========================================================
 # Payment success/error pages
 # =========================================================
+# Payment redirect - YooKassa returns here after payment
+# Now redirects to Mini App which checks payment status automatically
+# =========================================================
 
 @routes_bp.route('/payment-success', methods=['GET'])
 def payment_success():
-    """Page shown after successful payment return from YooKassa"""
-    from flask import render_template
-
-    # Get payment info from query params
+    """Redirect to Mini App - payment status is checked automatically"""
+    from flask import redirect, url_for, request
+    
+    # Get payment_id from query params if YooKassa passes it
     payment_id = request.args.get('payment_id')
-    amount = request.args.get('amount')
-    days = request.args.get('days')
-
-    return render_template('payment_success.html',
-                          payment_id=payment_id,
-                          amount=amount,
-                          days=days)
+    
+    # Redirect to Mini App with payment_id if available
+    if payment_id:
+        return redirect(f'/miniapp?payment_id={payment_id}')
+    else:
+        return redirect('/miniapp')
 
 
 @routes_bp.route('/payment-failed', methods=['GET'])
