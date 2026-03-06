@@ -617,6 +617,42 @@
         let userData = null;
         let balance = 0;
 
+        // Проверка на возврат после оплаты (payment_id в URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentIdFromUrl = urlParams.get('payment_id');
+
+        if (paymentIdFromUrl) {
+            // Показываем статус оплаты
+            showPaymentStatus(paymentIdFromUrl);
+        }
+
+        // Функция показа статуса оплаты
+        async function showPaymentStatus(paymentId) {
+            try {
+                const response = await fetch(`/api/payment/check/${paymentId}`);
+                const data = await response.json();
+
+                if (data.payment_info) {
+                    const status = data.payment_info.status;
+
+                    if (status === 'succeeded') {
+                        alert('✅ Оплата прошла успешно! Подписка активирована.');
+                        // Переключаемся на главный экран и обновляем данные
+                        switchScreen('main-screen');
+                        loadUserData();
+                    } else if (status === 'pending' || status === 'waiting_for_capture') {
+                        alert('⏳ Платёж обрабатывается. Пожалуйста, подождите.');
+                        // Повторная проверка через 3 секунды
+                        setTimeout(() => showPaymentStatus(paymentId), 3000);
+                    } else {
+                        alert('Статус платежа: ' + status);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking payment:', error);
+            }
+        }
+
         // Функция для получения данных пользователя
         async function loadUserData() {
             try {

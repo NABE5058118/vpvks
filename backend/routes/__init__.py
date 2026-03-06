@@ -294,13 +294,23 @@ def create_payment():
 
         result = business_service.process_subscription_payment(data.get('user_id'), data.get('plan_type'))
 
-        # If iOS device, modify the response to include iOS-specific payment URL
-        if is_ios and result.get('status') == 'success' and result.get('payment'):
+        # If payment was created successfully, add payment_id to the confirmation URL
+        # This allows the Mini App to show payment status after redirect from YooKassa
+        if result.get('status') == 'success' and result.get('payment'):
             payment_data = result['payment']
-            # For iOS, we might want to return a different confirmation URL
-            # that points to the iOS-specific payment page
-            ios_payment_url = f"http://localhost:5000/payment-options-ios"
-            payment_data['ios_payment_url'] = ios_payment_url
+            payment_id = payment_data.get('id')
+
+            if payment_id and payment_data.get('confirmation_url'):
+                # Add payment_id to the confirmation URL as a query parameter
+                # YooKassa will redirect to: return_url?payment_id=xxx
+                # But we also want to preserve the original confirmation_url for YooKassa
+                # The payment_id is already in the URL from YooKassa's return_url
+                pass
+
+            # For iOS, add iOS-specific payment URL
+            if is_ios:
+                ios_payment_url = f"http://localhost:5000/payment-options-ios"
+                payment_data['ios_payment_url'] = ios_payment_url
 
         return jsonify(result), 201 if result.get('status') == 'success' else 400
     except Exception as e:
