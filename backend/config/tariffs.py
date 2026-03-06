@@ -7,7 +7,7 @@ TARIFFS = {
     'month': {
         'id': 'month',
         'name': '1 месяц',
-        'price': 1,
+        'price': 110,
         'currency': 'RUB',
         'days': 30,
         'data_limit_gb': 0,  # 0 = безлимитный трафик
@@ -16,7 +16,7 @@ TARIFFS = {
     'quarter': {
         'id': 'quarter',
         'name': '3 месяца',
-        'price': 3,
+        'price': 290,
         'currency': 'RUB',
         'days': 90,
         'data_limit_gb': 0,
@@ -25,7 +25,7 @@ TARIFFS = {
     'year': {
         'id': 'year',
         'name': '12 месяцев',
-        'price': 5,
+        'price': 500,
         'currency': 'RUB',
         'days': 365,
         'data_limit_gb': 0,
