@@ -21,14 +21,8 @@ allowed_origins = os.getenv('CORS_ORIGINS', 'http://backend:8080,http://bot:8080
 CORS(app, resources={r"/api/*": {"origins": [o.strip() for o in allowed_origins.split(',')]}})
 
 # Rate Limiting
-limiter_storage = os.getenv('RATELIMIT_STORAGE_URL', 'memory://')
-limiter = Limiter(
-    key_func=get_remote_address,
-    app=app,
-    storage_uri=limiter_storage,
-    strategy="fixed-window",
-    default_limits=["100 per minute", "1000 per hour"]
-)
+from utils.limiter import limiter
+limiter.init_app(app)
 
 @app.after_request
 def add_security_headers(response):

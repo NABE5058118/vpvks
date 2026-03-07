@@ -17,7 +17,7 @@ from database.db_config import db
 from database.models.user_model import User as UserModel
 from database.models.payment_model import Payment as PaymentModel
 from database.models.connection_log_model import ConnectionLog
-from server import limiter
+from utils.limiter import limiter
 
 routes_bp = Blueprint('routes', __name__)
 business_service = BusinessLogicService()
