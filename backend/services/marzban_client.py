@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class MarzbanClient:
     def __init__(self):
-        self.base_url = os.getenv('MARZBAN_URL', 'https://127.0.0.1:8000')
+        # Marzban использует network_mode: host, поэтому localhost
+        self.base_url = os.getenv('MARZBAN_URL', 'http://localhost:8000')
         self.username = os.getenv('MARZBAN_ADMIN', 'admin')
         self.password = os.getenv('MARZBAN_PASSWORD')
         self.token = None
