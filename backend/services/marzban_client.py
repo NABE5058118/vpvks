@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 class MarzbanClient:
     def __init__(self):
-        # Marzban использует network_mode: host, поэтому localhost
-        self.base_url = os.getenv('MARZBAN_URL', 'http://localhost:8000')
+        self.base_url = os.getenv('MARZBAN_URL', 'https://host.docker.internal:8000')
         self.username = os.getenv('MARZBAN_ADMIN', 'admin')
         self.password = os.getenv('MARZBAN_PASSWORD')
         self.token = None

@@ -237,22 +237,20 @@ class PaymentService:
     def confirm_payment(self, payment_id):
         """Confirm payment as successful (internal method)"""
         try:
-            yookassa_payment = YooPayment.find_one(payment_id)
-            if yookassa_payment and yookassa_payment.paid:
-                # Update our local database
-                local_payment = PaymentModel.get_by_id(payment_id)
-                if local_payment:
-                    local_payment.update_status(yookassa_payment.status)
-                    db.session.commit()
-                
-                logger.info(f"Payment confirmed: {yookassa_payment.id}")
-                return {
-                    'id': yookassa_payment.id,
-                    'status': yookassa_payment.status,
-                    'paid': yookassa_payment.paid
-                }
-            logger.warning(f"Payment not found or not paid: {payment_id}")
-            return {'error': 'Payment not found or not paid'}
+            # Get payment from local database first
+            local_payment = PaymentModel.get_by_id(payment_id)
+            if not local_payment:
+                logger.warning(f"Local payment not found: {payment_id}")
+                return {'error': 'Payment not found'}
+            
+            # Return local payment data with user_id
+            return {
+                'id': local_payment.id,
+                'user_id': local_payment.user_id,
+                'amount': float(local_payment.amount),
+                'status': local_payment.status,
+                'paid': local_payment.paid
+            }
         except Exception as e:
             logger.error(f"Error confirming payment {payment_id}: {str(e)}")
             return {'error': str(e)}
