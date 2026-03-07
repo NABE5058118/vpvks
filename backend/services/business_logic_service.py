@@ -114,51 +114,56 @@ class BusinessLogicService:
             }
 
     def handle_successful_payment(self, payment_id):
-        """Handle the logic when a payment is confirmed"""
         try:
-            # Verify payment status
-            status = self.payment_service.check_payment_status(payment_id)
-            
-            if status != 'succeeded':
-                return {
-                    'status': 'error',
-                    'message': f'Payment not successful. Current status: {status}'
-                }
-            
-            # Get payment details to identify user
-            # In a real implementation, we'd store payment details in our DB
-            # For now, we'll assume the payment service has the user ID
             payment = self.payment_service.confirm_payment(payment_id)
-            
+
             if 'error' in payment:
                 return payment
-            
-            # Extend user subscription based on payment
-            # This is simplified - in reality, we'd map payment_id to user and plan
-            user_id = payment.get('user_id')
-            if user_id:
-                user = User.get_by_id(user_id)
-                if user:
-                    # Extend subscription
-                    now = datetime.now()
-                    if not user.is_subscription_active():
-                        user.subscription_end_date = now + timedelta(days=30)
-                    else:
-                        user.subscription_end_date += timedelta(days=30)
 
-                    # Update user in db
-                    User.users_db[user.id] = user
+            user_id = payment.get('user_id')
+            if not user_id:
+                return {'status': 'error', 'message': 'user_id not found in payment'}
+
+            user = User.get_by_id(user_id)
+            if not user:
+                return {'status': 'error', 'message': 'User not found'}
+
+            # Определяем длительность подписки из платежа
+            amount = float(payment.get('amount', 0))
+            from config.tariffs import get_tariff_by_price
+            tariff = get_tariff_by_price(amount)
+            
+            if tariff:
+                days_to_add = tariff['days']
+            else:
+                days_to_add = 30  # По умолчанию 30 дней
+
+            # Активируем подписку
+            now = datetime.now()
+            if not user.is_subscription_active():
+                user.subscription_end_date = now + timedelta(days=days_to_add)
+            else:
+                user.subscription_end_date += timedelta(days=days_to_add)
+
+            # Устанавливаем лимит трафика
+            if tariff:
+                user.data_limit_gb = tariff.get('data_limit_gb', 0)
+
+            # Коммит в БД
+            from database.db_config import db
+            db.session.commit()
+
+            logger.info(f"✅ Подписка активирована для user_{user_id} на {days_to_add} дн.")
 
             return {
                 'status': 'success',
-                'message': 'Payment processed successfully',
-                'payment': payment
+                'user_id': user_id,
+                'days_added': days_to_add,
+                'new_expire': user.subscription_end_date.isoformat()
             }
         except Exception as e:
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+            logger.error(f"❌ Ошибка активации подписки: {e}")
+            return {'status': 'error', 'message': str(e)}
 
     def get_user_subscription_status(self, user_id):
         """Get the subscription status for a user"""
