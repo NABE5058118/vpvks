@@ -1,14 +1,10 @@
-"""
-VPN Service
-Handles VPN connection logic with Marzban (V2Ray/Trojan/Reality)
-"""
+"""VPN Service - Marzban (V2Ray/Trojan/Reality)"""
 
 import os
 from datetime import datetime, timedelta
 import sys
 import logging
 
-# Add the parent directory to the path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.user import User
@@ -19,14 +15,10 @@ logger = logging.getLogger(__name__)
 
 class VPNService:
     def __init__(self):
-        """Initialize VPN service with Marzban client for V2Ray/Trojan"""
-        # Marzban client for V2Ray/Trojan
         self.marzban = MarzbanClient()
 
     def connect(self, user_id):
-        """Initiate VPN connection for user (V2Ray subscription)"""
         try:
-            # Check if user exists
             user = User.get_by_id(user_id)
             if not user:
                 return {
@@ -34,16 +26,14 @@ class VPNService:
                     'message': f'User {user_id} not found'
                 }
 
-            # Check if user's subscription is active
             if not user.is_subscription_active():
                 return {
                     'status': 'error',
-                    'message': f'Subscription is not active. Please renew your subscription.'
+                    'message': 'Subscription is not active. Please renew your subscription.'
                 }
 
-            # Get Marzban subscription
             result = self.get_marzban_subscription(user_id)
-            
+
             if result.get('status') == 'success':
                 return {
                     'status': 'success',
@@ -53,7 +43,7 @@ class VPNService:
                 }
             else:
                 return result
-                
+
         except Exception as e:
             return {
                 'status': 'error',
@@ -87,7 +77,7 @@ class VPNService:
 
             return {
                 'user_id': user_id,
-                'connected': user.is_active,
+                'connected': user.is_subscription_active(),
                 'connection_time': None,
                 'data_transferred': 0
             }

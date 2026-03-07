@@ -3,9 +3,6 @@
 # ===========================================
 
 services:
-  # ===========================================
-  # Marzban (V2Ray/Trojan/Reality)
-  # ===========================================
   marzban:
     build:
       context: .
@@ -25,9 +22,6 @@ services:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
 
-  # ===========================================
-  # VPN Bot Project
-  # ===========================================
   postgres:
     image: postgres:17-alpine
     container_name: vpn_postgres
@@ -120,16 +114,10 @@ services:
     volumes:
       - ./bot:/app
 
-# ===========================================
-# Networks
-# ===========================================
 networks:
   vpn_network:
     driver: bridge
 
-# ===========================================
-# Volumes
-# ===========================================
 volumes:
   postgres_data:
     driver: local

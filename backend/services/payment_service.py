@@ -1,32 +1,26 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-import yookassa
-from yookassa import Payment as YooPayment, Refund
+from yookassa import Payment as YooPayment
 from yookassa import Configuration
 from dotenv import load_dotenv
 import os
 import sys
 import logging
 
-# Add the parent directory to the path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import database components
 from database.db_config import db
 from models.payment import Payment as PaymentModel
 from models.user import User
 
-# Load environment variables
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class PaymentService:
     def __init__(self):
-        """Initialize payment service with YooKassa credentials"""
         shop_id = os.getenv('YOOKASSA_SHOP_ID')
         secret_key = os.getenv('YOOKASSA_SECRET_KEY')
 
@@ -34,30 +28,25 @@ class PaymentService:
             Configuration.account_id = shop_id
             Configuration.secret_key = secret_key
         else:
-            # For testing purposes, we'll skip configuration if env vars are not set
             print("Warning: YooKassa credentials not found. Payment functionality may not work properly.")
 
         self.test_mode = os.getenv('YOOKASSA_TEST_MODE', 'false').lower() == 'true'
         self.return_url = os.getenv('YOOKASSA_RETURN_URL', 'http://localhost:5000/payment-success')
 
     def create_payment(self, payment_data):
-        """Create a new payment via YooKassa"""
         try:
-            # Check if test mode is enabled
             test_mode = os.getenv('YOOKASSA_TEST_MODE', 'false').lower() == 'true'
 
             if test_mode:
-                # In test mode, return mock payment data that simulates successful payment
                 mock_payment_id = f"mock_{uuid.uuid4().hex[:16]}"
 
-                # Create mock payment in database with succeeded status
                 payment_db = PaymentModel.create({
                     'id': mock_payment_id,
                     'amount': payment_data.get('amount'),
                     'currency': payment_data.get('currency', 'RUB'),
                     'description': payment_data.get('description', f"Payment for VPN service by user {payment_data.get('user_id')}"),
                     'user_id': payment_data.get('user_id'),
-                    'status': 'succeeded',  # Immediately set to succeeded in test mode
+                    'status': 'succeeded',
                     'paid': True,  # Immediately mark as paid in test mode
                     'test': True,  # Mark as test payment
                     'stars_amount': payment_data.get('stars_amount', 0)  # Add stars amount if provided
@@ -150,9 +139,11 @@ class PaymentService:
                     'user_id': yookassa_payment.metadata.get('user_id'),
                     'status': yookassa_payment.status,
                     'paid': yookassa_payment.paid,
-                    'yookassa_response': dict(yookassa_payment),  # Store full response as JSON
-                    'test': getattr(yookassa_payment, 'test', False),  # Add test flag if available
-                    'stars_amount': payment_data.get('stars_amount', 0)  # Add stars amount if provided
+                    'yookassa_payment_id': yookassa_payment.id,
+                    'yookassa_status': yookassa_payment.status,
+                    'confirmation_url': yookassa_payment.confirmation.confirmation_url if yookassa_payment.confirmation else None,
+                    'test': getattr(yookassa_payment, 'test', False),
+                    'stars_amount': payment_data.get('stars_amount', 0)
                 })
 
                 # Store payment info locally

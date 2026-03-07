@@ -1,13 +1,9 @@
-"""
-Business Logic Service
-Coordinates the various services to implement business rules
-"""
+"""Business Logic Service"""
 
 import sys
 import os
 import logging
 
-# Add the parent directory to the path to allow absolute imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.vpn_service import VPNService
@@ -16,7 +12,6 @@ from models.user import User
 from datetime import datetime, timedelta
 import uuid
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -27,18 +22,12 @@ class BusinessLogicService:
         self.payment_service = PaymentService()
 
     def register_new_user(self, user_data):
-        """Register a new user and set up their account"""
         try:
-            # Create user in the database
             user = User.create(user_data)
 
-            # Set up trial period if applicable
             if not user_data.get('has_paid', False):
-                # Grant 7-day trial
                 user.subscription_end_date = datetime.now() + timedelta(days=7)
                 user.trial_used = True
-
-                # Commit changes to database
                 from database.db_config import db
                 db.session.commit()
 
@@ -53,26 +42,24 @@ class BusinessLogicService:
             }
 
     def initiate_vpn_connection(self, user_id):
-        """Handle the process of initiating a VPN connection"""
         try:
-            # Get user
             user = User.get_by_id(user_id)
             if not user:
                 return {
                     'status': 'error',
                     'message': 'User not found'
                 }
-            
+
             # Check if user has active subscription
-            if user.subscription_end_date and user.subscription_end_date < datetime.now():
+            if not user.is_subscription_active():
                 return {
                     'status': 'error',
                     'message': 'Subscription expired. Please renew your subscription.'
                 }
-            
+
             # Connect to VPN
             result = self.vpn_service.connect(user_id)
-            
+
             return result
         except Exception as e:
             return {
@@ -148,19 +135,20 @@ class BusinessLogicService:
             
             # Extend user subscription based on payment
             # This is simplified - in reality, we'd map payment_id to user and plan
-            user_id = payment.get('user_id')  # This would come from our payment records
+            user_id = payment.get('user_id')
             if user_id:
                 user = User.get_by_id(user_id)
                 if user:
-                    # Extend subscription (this is simplified)
-                    if not user.subscription_end_date or user.subscription_end_date < datetime.now():
-                        user.subscription_end_date = datetime.now() + timedelta(days=30)  # Default to 30 days
+                    # Extend subscription
+                    now = datetime.now()
+                    if not user.is_subscription_active():
+                        user.subscription_end_date = now + timedelta(days=30)
                     else:
-                        user.subscription_end_date += timedelta(days=30)  # Extend by 30 days
-                    
+                        user.subscription_end_date += timedelta(days=30)
+
                     # Update user in db
                     User.users_db[user.id] = user
-            
+
             return {
                 'status': 'success',
                 'message': 'Payment processed successfully',
@@ -183,19 +171,16 @@ class BusinessLogicService:
                 }
 
             # Determine subscription status
+            now = datetime.now()
             if not user.subscription_end_date:
                 subscription_status = 'no_subscription'
                 days_left = 0
-            elif user.subscription_end_date < datetime.now():
+            elif not user.is_subscription_active():
                 subscription_status = 'expired'
                 days_left = 0
             else:
-                days_left = (user.subscription_end_date - datetime.now()).days
-                if days_left <= 0:
-                    subscription_status = 'expired'
-                    days_left = 0
-                else:
-                    subscription_status = 'active'
+                days_left = max(0, int((user.subscription_end_date - now).total_seconds() / 86400))
+                subscription_status = 'active'
 
             # Get VPN connection status
             vpn_status = self.vpn_service.get_connection_status(user_id)
@@ -303,8 +288,9 @@ class BusinessLogicService:
 
                 # Update user subscription
                 from database.db_config import db
-                if not user.subscription_end_date or user.subscription_end_date < datetime.now():
-                    user.subscription_end_date = datetime.now() + timedelta(days=days_to_add)
+                now = datetime.now()
+                if not user.is_subscription_active():
+                    user.subscription_end_date = now + timedelta(days=days_to_add)
                     print(f"Set new subscription end date for user {user_id}: {user.subscription_end_date}")
                     logger.info(f"Set new subscription end date for user {user_id}: {user.subscription_end_date}")
                 else:

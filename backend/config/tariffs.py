@@ -1,7 +1,4 @@
-"""
-Конфигурация тарифов VPN
-Централизованное хранилище информации о тарифах
-"""
+"""VPN tariffs configuration"""
 
 TARIFFS = {
     'month': {
@@ -10,7 +7,7 @@ TARIFFS = {
         'price': 1,
         'currency': 'RUB',
         'days': 30,
-        'data_limit_gb': 0,  # 0 = безлимитный трафик
+        'data_limit_gb': 0,
         'description': '30 дней подписки, безлимитный трафик'
     },
     'quarter': {
@@ -35,12 +32,10 @@ TARIFFS = {
 
 
 def get_tariff_by_id(tariff_id):
-    """Получить тариф по ID"""
     return TARIFFS.get(tariff_id)
 
 
 def get_tariff_by_price(price):
-    """Получить тариф по цене"""
     for tariff in TARIFFS.values():
         if tariff['price'] == price:
             return tariff
@@ -48,13 +43,11 @@ def get_tariff_by_price(price):
 
 
 def get_all_tariffs():
-    """Получить все тарифы"""
     return list(TARIFFS.values())
 
 
 def get_data_limit_bytes(tariff_id):
-    """Получить лимит трафика в байтах для тарифа"""
     tariff = get_tariff_by_id(tariff_id)
     if tariff and tariff['data_limit_gb'] > 0:
         return tariff['data_limit_gb'] * 1024**3
-    return 0  # 0 = безлимитно
+    return 0
