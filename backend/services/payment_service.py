@@ -31,7 +31,7 @@ class PaymentService:
             print("Warning: YooKassa credentials not found. Payment functionality may not work properly.")
 
         self.test_mode = os.getenv('YOOKASSA_TEST_MODE', 'false').lower() == 'true'
-        self.return_url = os.getenv('YOOKASSA_RETURN_URL', 'http://localhost:5000/payment-success')
+        self.return_url = os.getenv('YOOKASSA_RETURN_URL', 'https://t.me/relatevpnbot?start=payment_success')
 
     def create_payment(self, payment_data):
         try:

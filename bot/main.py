@@ -21,23 +21,84 @@ from utils.validation import validate_user_id, sanitize_input
 from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_selection
 
 # Импорты уведомлений
-from notifications import send_expiration_reminder, send_welcome_notification_sync
+from notifications import send_expiration_reminder, send_welcome_notification_sync, send_payment_success_notification_sync
+
+
+async def handle_payment_success(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка возврата после успешной оплаты"""
+    user_id = update.effective_user.id
+    
+    # Получаем баланс пользователя
+    balance = 0
+    subscription_status = 'unknown'
+    
+    try:
+        timeout = aiohttp.ClientTimeout(total=10, connect=5)
+        connector = aiohttp.TCPConnector(ssl=False)
+        
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            # Получаем баланс
+            async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    balance = data.get('balance', 0)
+            
+            # Получаем статус подписки
+            async with session.get(f"{BACKEND_URL}/api/vpn/status/{user_id}") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    subscription = data.get('subscription', {})
+                    subscription_status = subscription.get('status', 'unknown')
+    except Exception as e:
+        logger.error(f"Error getting user info: {e}")
+    
+    # Формируем сообщение
+    if subscription_status == 'active':
+        message = (
+            "✅ **Оплата прошла успешно!**\n\n"
+            "Ваша подписка активирована и готова к использованию.\n\n"
+            "🔑 Для получения ключа нажмите:\n"
+            "/key\n\n"
+            "📱 Или откройте Mini App:"
+        )
+    else:
+        message = (
+            "✅ **Оплата прошла успешно!**\n\n"
+            "Подписка активируется в течение 1-2 минут.\n\n"
+            "🔑 Для получения ключа нажмите:\n"
+            "/key\n\n"
+            "📱 Или откройте Mini App:"
+        )
+    
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+    
+    keyboard = [[
+        InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL))
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the /start command - register user and show menu with Mini App"""
     user_id = update.effective_user.id
-
+    
+    # Проверяем, это возврат после оплаты или обычный старт
+    if context.args and context.args[0] == 'payment_success':
+        await handle_payment_success(update, context)
+        return
+    
     if not validate_user_id(user_id):
         logger.warning(f"Invalid user ID: {user_id}")
         await update.message.reply_text("❌ Неверный идентификатор пользователя")
         return
-
+    
     # Sanitize user data
     username = sanitize_input(update.effective_user.username or "")
     first_name = sanitize_input(update.effective_user.first_name or "")
     last_name = sanitize_input(update.effective_user.last_name or "")
-
+    
     # Register user with backend
     user_data = {
         'id': user_id,
@@ -45,24 +106,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'first_name': first_name,
         'last_name': last_name
     }
-
+    
     try:
         timeout = aiohttp.ClientTimeout(total=30, connect=10)
         connector = aiohttp.TCPConnector(ssl=False)
-
+        
         async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
             async with session.post(f"{BACKEND_URL}/api/users", json=user_data) as response:
                 if response.status != 201:
                     logger.warning(f"Failed to register user {user_id}: {await response.text()}")
     except Exception as e:
         logger.error(f"Error registering user {user_id}: {e}")
-
+    
     # Get user balance from backend
     balance = 0
     try:
         timeout = aiohttp.ClientTimeout(total=10, connect=5)
         connector = aiohttp.TCPConnector(ssl=False)
-
+        
         async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
             async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
                 if response.status == 200:
@@ -70,10 +131,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     balance = data.get('balance', 0)
     except Exception as e:
         logger.error(f"Error getting balance: {e}")
-
+    
     # Create inline keyboard with Mini App button
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-
+    
     keyboard = [
         [
             InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),

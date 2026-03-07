@@ -64,6 +64,11 @@ def payment_options_ios():
     payment_id = request.args.get('payment_id', '')
     return render_template('payment_ios.html', amount=amount, currency=currency, payment_id=payment_id)
 
+@app.route('/payment-success', methods=['GET'])
+def payment_success():
+    payment_id = request.args.get('payment_id')
+    return render_template('payment_success.html', payment_id=payment_id)
+
 @app.route('/payment-redirect/<payment_id>')
 def payment_redirect(payment_id):
     from models.payment import Payment as PaymentModel
