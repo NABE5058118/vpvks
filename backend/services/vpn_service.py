@@ -236,18 +236,21 @@ class VPNService:
 
             logger.info(f"Expire timestamp: {expire_timestamp}")
 
+            # Конвертируем timestamp в дни
+            import time
+            expire_days = max(1, (expire_timestamp - int(time.time())) // 86400)
+            logger.info(f"Expire days: {expire_days}")
+
             # Создание пользователя с лимитом трафика
-            result = self.marzban.create_user_with_expire(
+            result = self.marzban.create_user(
                 username=username,
                 data_limit=data_limit_bytes,
-                expire_timestamp=expire_timestamp,
-                protocols={"vless": {}, "trojan": {}}
+                expire_days=expire_days,
+                protocols={"vless": {}, "trojan": {}},
+                inbounds=inbounds
             )
 
             if result.get("status") == "success":
-                # 🔴 Добавляем inbounds после создания
-                self.marzban.modify_user(username, inbounds=inbounds)
-
                 subscription_url = self.marzban.get_subscription_url(username)
 
                 # 🆕 СИНХРОНИЗАЦИЯ С POSTGRESQL
