@@ -319,27 +319,65 @@ class VPNService:
         """
         try:
             username = payload.get('username', f'user_{user_id}')
-            
+
             # Проверяем существует ли уже пользователь
             existing = self.marzban.get_user(username)
             if existing.get('status') == 'success':
                 logger.info(f"User {username} already exists, updating...")
-                result = self.marzban.modify_user(
-                    username,
-                    data_limit=payload.get('data_limit'),
-                    expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400),
-                    inbounds=payload.get('inbounds')
-                )
+                
+                # 🔴 ИСПРАВЛЕНИЕ: передаём expire как timestamp, а не expire_days
+                # Marzban API принимает expire как Unix timestamp
+                modify_data = {}
+                
+                if payload.get('data_limit') is not None:
+                    modify_data['data_limit'] = payload.get('data_limit')
+                    logger.info(f"Setting data_limit: {payload.get('data_limit')}")
+                
+                if payload.get('expire') and payload.get('expire') > 0:
+                    # Передаем expire как timestamp (Marzban API)
+                    modify_data['expire'] = payload.get('expire')
+                    logger.info(f"Setting expire timestamp: {payload.get('expire')}")
+                
+                if payload.get('inbounds'):
+                    modify_data['inbounds'] = payload.get('inbounds')
+                    logger.info(f"Setting inbounds: {payload.get('inbounds')}")
+                
+                if payload.get('proxies'):
+                    modify_data['proxies'] = payload.get('proxies')
+                    logger.info(f"Setting proxies: {payload.get('proxies')}")
+                
+                result = self.marzban.modify_user(username, modify_data)
+                logger.info(f"Marzban modify_user result: {result}")
                 return result
-            
+
             # Создаём нового пользователя с inbounds из payload
+            create_payload = {
+                "username": username,
+                "data_limit": payload.get('data_limit', 10 * 1024**3),
+            }
+            
+            if payload.get('expire'):
+                create_payload['expire'] = payload.get('expire')
+            
+            if payload.get('inbounds'):
+                create_payload['inbounds'] = payload.get('inbounds')
+            
+            if payload.get('proxies'):
+                create_payload['proxies'] = payload.get('proxies')
+            
             result = self.marzban.create_user(
                 username=username,
-                data_limit=payload.get('data_limit', 10 * 1024**3),
-                expire_days=int((payload.get('expire', 0) - int(datetime.utcnow().timestamp())) / 86400),
-                inbounds=payload.get('inbounds')  # Передаём inbounds напрямую!
+                data_limit=create_payload.get('data_limit', 10 * 1024**3),
+                expire_days=0,  # Не используем expire_days, передаём expire напрямую
+                inbounds=create_payload.get('inbounds')
             )
             
+            # Если create_user не поддержит expire, нужно использовать modify_user
+            if result.get('status') == 'success' and payload.get('expire'):
+                # Дополнительно обновляем expire через modify_user
+                modify_result = self.marzban.modify_user(username, {'expire': payload.get('expire')})
+                logger.info(f"Marzban modify_user after create: {modify_result}")
+
             return result
         except Exception as e:
             logger.error(f"Error creating Marzban user with payload: {e}")
