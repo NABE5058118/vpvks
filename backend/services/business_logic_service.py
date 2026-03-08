@@ -145,6 +145,11 @@ class BusinessLogicService:
             else:
                 user.subscription_end_date += timedelta(days=days_to_add)
 
+            # 🔴 СБРОС УВЕДОМЛЕНИЙ: При продлении подписки сбрасываем last_expiration_reminder_sent
+            # Чтобы пользователь не получал ложные уведомления об истечении
+            user.last_expiration_reminder_sent = None
+            logger.info(f"🔄 Сброшено last_expiration_reminder_sent для user_{user_id}")
+
             # Устанавливаем лимит трафика
             if tariff:
                 user.data_limit_gb = tariff.get('data_limit_gb', 0)
@@ -302,6 +307,11 @@ class BusinessLogicService:
                     user.subscription_end_date += timedelta(days=days_to_add)
                     print(f"Extended subscription end date for user {user_id}: {user.subscription_end_date}")
                     logger.info(f"Extended subscription end date for user {user_id}: {user.subscription_end_date}")
+
+                # 🔴 СБРОС УВЕДОМЛЕНИЙ: При продлении подписки сбрасываем last_expiration_reminder_sent
+                # Чтобы пользователь не получал ложные уведомления об истечении
+                user.last_expiration_reminder_sent = None
+                logger.info(f"🔄 Сброшено last_expiration_reminder_sent для user_{user_id}")
 
                 # Update user traffic limit
                 user.data_limit_gb = data_limit_gb
