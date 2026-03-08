@@ -160,6 +160,40 @@ class BusinessLogicService:
 
             logger.info(f"✅ Подписка активирована для user_{user_id} на {days_to_add} дн.")
 
+            # 🔴 ОБНОВЛЕНИЕ MARZBAN: Обновляем пользователя в Marzban
+            try:
+                from services.vpn_service import VPNService
+                vpn_service = VPNService()
+
+                # Вычисляем expire timestamp
+                expire_date = user.subscription_end_date
+                expire_timestamp = int(expire_date.timestamp())
+
+                # Создаём username для Marzban
+                username = f"user_{user_id}"
+
+                # 🔴 Формируем payload с inbounds и лимитом трафика
+                data_limit_bytes = user.data_limit_gb * 1024**3 if user.data_limit_gb else 0
+
+                payload = {
+                    "username": username,
+                    "data_limit": data_limit_bytes,
+                    "expire": expire_timestamp,
+                }
+
+                logger.info(f"🔄 Updating Marzban user {username} with expire={expire_timestamp}, data_limit={data_limit_bytes}")
+                
+                # Обновляем пользователя в Marzban
+                result = vpn_service.create_marzban_user_with_payload(user_id, payload)
+
+                if result.get('status') == 'success':
+                    logger.info(f"✅ Marzban user updated: {username}")
+                else:
+                    logger.warning(f"⚠️ Marzban user update failed: {result.get('message', 'Unknown error')}")
+
+            except Exception as e:
+                logger.error(f"❌ Error updating Marzban user: {e}")
+
             return {
                 'status': 'success',
                 'user_id': user_id,
