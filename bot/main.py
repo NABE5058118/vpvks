@@ -4,7 +4,10 @@ from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS, CHANNEL_URL
+from config import (
+    BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS,
+    CHANNEL_NEWS_URL, CHANNEL_WIN_MAC_URL, CHANNEL_ANDROID_IOS_URL, CHANNEL_NEWS_ID
+)
 
 # Настройка логирования
 logging.basicConfig(
@@ -16,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Импорты для асинхронной работы
 import aiohttp
 from utils.validation import validate_user_id, sanitize_input
+from utils.subscription_checker import check_subscription, is_user_admin
 
 # Импорты обработчиков VPN ключей
 from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_selection
@@ -81,24 +85,24 @@ async def handle_payment_success(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /start command - register user and show menu with Mini App"""
+    """Handle the /start command - register user and show menu with subscription check"""
     user_id = update.effective_user.id
-    
+
     # Проверяем, это возврат после оплаты или обычный старт
     if context.args and context.args[0] == 'payment_success':
         await handle_payment_success(update, context)
         return
-    
+
     if not validate_user_id(user_id):
         logger.warning(f"Invalid user ID: {user_id}")
         await update.message.reply_text("❌ Неверный идентификатор пользователя")
         return
-    
+
     # Sanitize user data
     username = sanitize_input(update.effective_user.username or "")
     first_name = sanitize_input(update.effective_user.first_name or "")
     last_name = sanitize_input(update.effective_user.last_name or "")
-    
+
     # Register user with backend
     user_data = {
         'id': user_id,
@@ -106,60 +110,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'first_name': first_name,
         'last_name': last_name
     }
-    
+
     try:
         timeout = aiohttp.ClientTimeout(total=30, connect=10)
         connector = aiohttp.TCPConnector(ssl=False)
-        
+
         async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
             async with session.post(f"{BACKEND_URL}/api/users", json=user_data) as response:
                 if response.status != 201:
                     logger.warning(f"Failed to register user {user_id}: {await response.text()}")
     except Exception as e:
         logger.error(f"Error registering user {user_id}: {e}")
-    
-    # Get user balance from backend
-    balance = 0
-    try:
-        timeout = aiohttp.ClientTimeout(total=10, connect=5)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
-                if response.status == 200:
-                    data = await response.json()
-                    balance = data.get('balance', 0)
-    except Exception as e:
-        logger.error(f"Error getting balance: {e}")
-    
-    # Create inline keyboard with Mini App button
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-    
-    keyboard = [
-        [
-            InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
-        ],
-        [
-            InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
-        ]
-    ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Показываем главное меню
+    await show_main_menu(update, context)
 
-    # Welcome message
-    username_display = f"@{username}" if username else first_name or "Пользователь"
-
-    welcome_message = (
-        f"👋 Привет, {username_display}!\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n\n"
-        "Нажми кнопку ниже чтобы открыть приложение 👇"
-    )
-
-    await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='HTML')
-    
     # Отправляем приветственное уведомление
     try:
-        send_welcome_notification_sync(user_id, username_display)
+        send_welcome_notification_sync(user_id, username)
     except Exception as e:
         logger.error(f"Не удалось отправить приветственное уведомление: {e}")
 
@@ -337,22 +305,47 @@ async def payments(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /app command to open the Web App"""
+    """Handle the /app command to open the Web App with subscription check"""
     from config import MINI_APP_URL
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-    # Create inline keyboard with Web App button
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    keyboard = [[InlineKeyboardButton(
-        "📱 Открыть VPN приложение",
-        web_app={"url": MINI_APP_URL}
-    )]]
+    user_id = update.effective_user.id
+    is_admin_user = is_user_admin(user_id)
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Проверяем подписку (если не админ)
+    is_subscribed = True if is_admin_user else await check_subscription(user_id)
 
-    await update.message.reply_text(
-        "Нажмите кнопку ниже, чтобы открыть полнофункциональное VPN-приложение:",
-        reply_markup=reply_markup
-    )
+    if is_subscribed:
+        # Пользователь подписан — открываем Mini App
+        keyboard = [[InlineKeyboardButton(
+            "📱 Открыть VPN приложение",
+            web_app=WebAppInfo(url=MINI_APP_URL)
+        )]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "Нажмите кнопку ниже, чтобы открыть полнофункциональное VPN-приложение:",
+            reply_markup=reply_markup
+        )
+    else:
+        # Пользователь не подписан — просим подписаться
+        keyboard = [
+            [
+                InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
+            ],
+            [
+                InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "⚠️ Для доступа к VPN приложению необходимо подписаться на канал новостей!\n\n"
+            "1️⃣ Нажмите кнопку «📢 Подписаться на канал»\n"
+            "2️⃣ Подпишитесь\n"
+            "3️⃣ Вернитесь и нажмите «✅ Я подписался»",
+            reply_markup=reply_markup
+        )
 
 
 async def reset_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -413,52 +406,160 @@ async def renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показать главное меню с кнопками"""
+    """Показать главное меню с проверкой подписки"""
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-    
+
     user_id = update.effective_user.id
-    
-    # Get user balance
-    balance = 0
-    try:
-        timeout = aiohttp.ClientTimeout(total=10, connect=5)
-        connector = aiohttp.TCPConnector(ssl=False)
-
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
-                if response.status == 200:
-                    data = await response.json()
-                    balance = data.get('balance', 0)
-    except Exception as e:
-        logger.error(f"Error getting balance: {e}")
-
-    # Get username
     user = update.effective_user
     username = user.username or user.first_name or "Пользователь"
 
+    # Проверяем подписку (если не админ)
+    is_admin_user = is_user_admin(user_id)
+    is_subscribed = True if is_admin_user else await check_subscription(user_id)
+
+    if is_subscribed:
+        # Пользователь подписан — показываем доступ к Mini App
+        keyboard = [
+            [
+                InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
+            ],
+            [
+                InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+            ],
+            [
+                InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_NEWS_URL),
+            ]
+        ]
+
+        welcome_message = (
+            f"👋 Привет, @{username}!\n\n"
+            f"🆔 ID: <code>{user_id}</code>\n\n"
+            "✅ Вы подписаны на канал новостей\n\n"
+            "Нажми кнопку ниже чтобы открыть приложение 👇"
+        )
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+    else:
+        # Пользователь не подписан — просим подписаться
+        keyboard = [
+            [
+                InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
+            ],
+            [
+                InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
+            ],
+            [
+                InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+            ]
+        ]
+
+        message = (
+            f"👋 Привет, @{username}!\n\n"
+            f"🆔 ID: <code>{user_id}</code>\n\n"
+            "⚠️ Для доступа к VPN приложению необходимо подписаться на канал новостей!\n\n"
+            "1️⃣ Нажмите кнопку «📢 Подписаться на канал»\n"
+            "2️⃣ Подпишитесь на канал\n"
+            "3️⃣ Вернитесь в бот и нажмите «✅ Я подписался»\n\n"
+            "После этого вы получите доступ к VPN!"
+        )
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message,
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+
+
+async def show_instructions_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показать меню с инструкциями"""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+    user_id = update.effective_user.id
+
     keyboard = [
         [
-            InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
+            InlineKeyboardButton("🖥️ Windows / macOS", url=CHANNEL_WIN_MAC_URL),
         ],
         [
-            InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_URL),
+            InlineKeyboardButton("📱 Android / iOS", url=CHANNEL_ANDROID_IOS_URL),
+        ],
+        [
+            InlineKeyboardButton("🔙 Назад", callback_data="back"),
         ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    welcome_message = (
-        f"👋 Привет, @{username}!\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n\n"
-        "Нажми кнопку ниже чтобы открыть приложение 👇"
+    message = (
+        "📚 **Инструкции по подключению**\n\n"
+        "Выберите вашу платформу:\n\n"
+        "• **Windows / macOS** — подробная инструкция по установке и настройке\n"
+        "• **Android / iOS** — руководство для мобильных устройств\n\n"
+        "После установки следуйте шагам из инструкции."
     )
 
-    await context.bot.send_message(
-        chat_id=user_id,
-        text=welcome_message,
-        reply_markup=reply_markup,
-        parse_mode='HTML'
-    )
+    # Если вызвано из callback query
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text=message,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+
+
+async def check_subscription_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Проверка подписки при нажатии кнопки «Я подписался»"""
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
+    query = update.callback_query
+    await query.answer()
+
+    user_id = update.effective_user.id
+    is_admin_user = is_user_admin(user_id)
+
+    # Проверяем подписку
+    is_subscribed = True if is_admin_user else await check_subscription(user_id)
+
+    if is_subscribed:
+        # Пользователь подписался — показываем главное меню
+        await query.edit_message_text(
+            text="✅ Отлично! Вы подписаны на канал новостей.\n\nТеперь вам доступен VPN!",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
+            ]]),
+            parse_mode='Markdown'
+        )
+    else:
+        # Всё ещё не подписан
+        await query.edit_message_text(
+            text="❌ Вы всё ещё не подписаны на канал.\n\n"
+                 "Пожалуйста, подпишитесь и нажмите «✅ Я подписался» ещё раз.",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
+                ],
+                [
+                    InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
+                ]
+            ])
+        )
 
 
 async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -478,7 +579,17 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
         await query.delete_message()
         return
 
-    # Обработка инструкции по VPN
+    # Обработка кнопки "Инструкции"
+    if callback_data == "instructions":
+        await show_instructions_menu(update, context)
+        return
+
+    # Обработка кнопки "Я подписался"
+    if callback_data == "check_subscription":
+        await check_subscription_callback(update, context)
+        return
+
+    # Обработка инструкции по VPN (старая кнопка, для совместимости)
     if callback_data == "vpn_instruction":
         from handlers.vpn_key_handler import show_vpn_instruction
         await show_vpn_instruction(update, context)

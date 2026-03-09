@@ -11,7 +11,14 @@ load_dotenv('.env')
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:5000')
 MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://example.com/miniapp')
-CHANNEL_URL = os.getenv('CHANNEL_URL', 'https://t.me/vpvks_news')
+
+# Каналы
+CHANNEL_NEWS_URL = os.getenv('CHANNEL_NEWS_URL', 'https://t.me/vpvks_news')  # Обязательный канал новостей
+CHANNEL_WIN_MAC_URL = os.getenv('CHANNEL_WIN_MAC_URL', 'https://t.me/vpvkspc')  # Инструкции Windows/macOS
+CHANNEL_ANDROID_IOS_URL = os.getenv('CHANNEL_ANDROID_IOS_URL', 'https://t.me/VPVKSinstr')  # Инструкции Android/iOS
+
+# ID канала новостей для проверки подписки (без @)
+CHANNEL_NEWS_ID = os.getenv('CHANNEL_NEWS_ID', 'vpvks_news')
 
 # Admin user IDs (comma-separated list in environment variable)
 ADMIN_IDS_STR = os.getenv('ADMIN_USER_IDS', '')
@@ -24,12 +31,12 @@ def is_admin(user_id):
 def check_env_vars():
     """Check if required environment variables are set"""
     errors = []
-    
+
     if not BOT_TOKEN:
         errors.append("TELEGRAM_BOT_TOKEN is not set")
-    
+
     if not BACKEND_URL:
         errors.append("BACKEND_URL is not set")
-    
+
     if errors:
         raise EnvironmentError("Missing required environment variables: " + ", ".join(errors))
