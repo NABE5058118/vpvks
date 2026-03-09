@@ -526,7 +526,7 @@ async def show_instructions_menu(update: Update, context: ContextTypes.DEFAULT_T
 
 async def check_subscription_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Проверка подписки при нажатии кнопки «Я подписался»"""
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
     query = update.callback_query
     await query.answer()
@@ -534,20 +534,34 @@ async def check_subscription_callback(update: Update, context: ContextTypes.DEFA
     user_id = update.effective_user.id
     is_admin_user = is_user_admin(user_id)
 
+    logger.info(f"🔍 Проверка подписки по кнопке для user_{user_id} (админ: {is_admin_user})")
+
     # Проверяем подписку
     is_subscribed = True if is_admin_user else await check_subscription(user_id)
 
+    logger.info(f"{'✅' if is_subscribed else '❌'} Результат проверки: {'подписан' if is_subscribed else 'не подписан'}")
+
     if is_subscribed:
         # Пользователь подписался — показываем главное меню
+        logger.info(f"📤 Отправка главного меню user_{user_id}")
         await query.edit_message_text(
             text="✅ Отлично! Вы подписаны на канал новостей.\n\nТеперь вам доступен VPN!",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
-            ]]),
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("🚀 Открыть VPN приложение", web_app={"url": MINI_APP_URL}),
+                ],
+                [
+                    InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+                ],
+                [
+                    InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_NEWS_URL),
+                ]
+            ]),
             parse_mode='Markdown'
         )
     else:
         # Всё ещё не подписан
+        logger.warning(f"⚠️ User_{user_id} всё ещё не подписан")
         await query.edit_message_text(
             text="❌ Вы всё ещё не подписаны на канал.\n\n"
                  "Пожалуйста, подпишитесь и нажмите «✅ Я подписался» ещё раз.",
