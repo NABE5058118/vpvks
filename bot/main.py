@@ -527,6 +527,7 @@ async def show_instructions_menu(update: Update, context: ContextTypes.DEFAULT_T
 async def check_subscription_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Проверка подписки при нажатии кнопки «Я подписался»"""
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.error import BadRequest
 
     query = update.callback_query
     await query.answer()
@@ -537,43 +538,107 @@ async def check_subscription_callback(update: Update, context: ContextTypes.DEFA
     logger.info(f"🔍 Проверка подписки по кнопке для user_{user_id} (админ: {is_admin_user})")
 
     # Проверяем подписку
-    is_subscribed = True if is_admin_user else await check_subscription(user_id)
-
-    logger.info(f"{'✅' if is_subscribed else '❌'} Результат проверки: {'подписан' if is_subscribed else 'не подписан'}")
+    try:
+        is_subscribed = True if is_admin_user else await check_subscription(user_id)
+        logger.info(f"{'✅' if is_subscribed else '❌'} Результат проверки: {'подписан' if is_subscribed else 'не подписан'}")
+    except Exception as e:
+        logger.error(f"❌ Исключение при проверке подписки: {e}")
+        is_subscribed = False
 
     if is_subscribed:
         # Пользователь подписался — показываем главное меню
         logger.info(f"📤 Отправка главного меню user_{user_id}")
-        await query.edit_message_text(
-            text="✅ Отлично! Вы подписаны на канал новостей.\n\nТеперь вам доступен VPN!",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("🚀 Открыть VPN приложение", web_app={"url": MINI_APP_URL}),
-                ],
-                [
-                    InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
-                ],
-                [
-                    InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_NEWS_URL),
-                ]
-            ]),
-            parse_mode='Markdown'
-        )
+        try:
+            await query.edit_message_text(
+                text="✅ Отлично! Вы подписаны на канал новостей.\n\nТеперь вам доступен VPN!",
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("🚀 Открыть VPN приложение", web_app={"url": MINI_APP_URL}),
+                    ],
+                    [
+                        InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+                    ],
+                    [
+                        InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_NEWS_URL),
+                    ]
+                ]),
+                parse_mode='Markdown'
+            )
+        except BadRequest as e:
+            if "message is not modified" in str(e).lower():
+                # Сообщение не изменилось — просто отвечаем на callback
+                logger.warning(f"⚠️ Сообщение не изменено для user_{user_id}")
+            else:
+                raise
+
     else:
-        # Всё ещё не подписан
+        # Всё ещё не подписан — показываем подробную инструкцию
         logger.warning(f"⚠️ User_{user_id} всё ещё не подписан")
-        await query.edit_message_text(
-            text="❌ Вы всё ещё не подписаны на канал.\n\n"
-                 "Пожалуйста, подпишитесь и нажмите «✅ Я подписался» ещё раз.",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
-                ],
-                [
-                    InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
-                ]
-            ])
-        )
+        
+        # Проверяем, является ли бот администратором канала
+        bot_is_admin = False
+        try:
+            from telegram import Bot
+            bot = Bot(token=BOT_TOKEN)
+            bot_member = await bot.get_chat_member(chat_id=CHANNEL_NEWS_ID, user_id=bot.id)
+            bot_is_admin = bot_member.status == 'administrator'
+            logger.info(f"🤖 Статус бота в канале: {bot_member.status}")
+        except Exception as e:
+            logger.error(f"❌ Не удалось проверить статус бота: {e}")
+        
+        if not bot_is_admin:
+            # Бот не админ — показываем инструкцию
+            try:
+                await query.edit_message_text(
+                    text="⚠️ **ВНИМАНИЕ! Проблема с проверкой подписки**\n\n"
+                         "Бот не является администратором канала @vpvks_news.\n\n"
+                         "**Что делать:**\n"
+                         "1. Откройте @vpvks_news\n"
+                         "2. Управление → Администраторы\n"
+                         "3. Добавьте бота как администратора\n"
+                         "4. Дайте право 'Просмотр сообщений'\n\n"
+                         "Или напишите в поддержку @vpvks_support",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("📢 Открыть канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
+                        ],
+                        [
+                            InlineKeyboardButton("🔄 Проверить ещё раз", callback_data="check_subscription"),
+                        ],
+                        [
+                            InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+                        ]
+                    ]),
+                    parse_mode='Markdown'
+                )
+            except BadRequest as e:
+                if "message is not modified" in str(e).lower():
+                    logger.warning(f"⚠️ Сообщение не изменено для user_{user_id}")
+                else:
+                    raise
+        else:
+            # Бот админ, но пользователь действительно не подписан
+            try:
+                await query.edit_message_text(
+                    text="❌ Вы всё ещё не подписаны на канал.\n\n"
+                         "Пожалуйста, подпишитесь и нажмите «🔄 Проверить ещё раз».",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
+                        ],
+                        [
+                            InlineKeyboardButton("🔄 Проверить ещё раз", callback_data="check_subscription"),
+                        ],
+                        [
+                            InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+                        ]
+                    ])
+                )
+            except BadRequest as e:
+                if "message is not modified" in str(e).lower():
+                    logger.warning(f"⚠️ Сообщение не изменено для user_{user_id}")
+                else:
+                    raise
 
 
 async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
