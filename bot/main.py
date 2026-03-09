@@ -4,10 +4,7 @@ from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-from config import (
-    BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS,
-    CHANNEL_NEWS_URL, CHANNEL_WIN_MAC_URL, CHANNEL_ANDROID_IOS_URL, CHANNEL_NEWS_ID
-)
+from config import BOT_TOKEN, BACKEND_URL, MINI_APP_URL, ADMIN_IDS, CHANNEL_NEWS_URL, CHANNEL_WIN_MAC_URL, CHANNEL_ANDROID_IOS_URL
 
 # Настройка логирования
 logging.basicConfig(
@@ -19,7 +16,6 @@ logger = logging.getLogger(__name__)
 # Импорты для асинхронной работы
 import aiohttp
 from utils.validation import validate_user_id, sanitize_input
-from utils.subscription_checker import check_subscription, is_user_admin
 
 # Импорты обработчиков VPN ключей
 from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_selection
@@ -305,47 +301,20 @@ async def payments(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def app_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle the /app command to open the Web App with subscription check"""
+    """Handle the /app command to open the Web App"""
     from config import MINI_APP_URL
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-    user_id = update.effective_user.id
-    is_admin_user = is_user_admin(user_id)
+    keyboard = [[InlineKeyboardButton(
+        "📱 Открыть VPN приложение",
+        web_app=WebAppInfo(url=MINI_APP_URL)
+    )]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Проверяем подписку (если не админ)
-    is_subscribed = True if is_admin_user else await check_subscription(user_id)
-
-    if is_subscribed:
-        # Пользователь подписан — открываем Mini App
-        keyboard = [[InlineKeyboardButton(
-            "📱 Открыть VPN приложение",
-            web_app=WebAppInfo(url=MINI_APP_URL)
-        )]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "Нажмите кнопку ниже, чтобы открыть полнофункциональное VPN-приложение:",
-            reply_markup=reply_markup
-        )
-    else:
-        # Пользователь не подписан — просим подписаться
-        keyboard = [
-            [
-                InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
-            ],
-            [
-                InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "⚠️ Для доступа к VPN приложению необходимо подписаться на канал новостей!\n\n"
-            "1️⃣ Нажмите кнопку «📢 Подписаться на канал»\n"
-            "2️⃣ Подпишитесь\n"
-            "3️⃣ Вернитесь и нажмите «✅ Я подписался»",
-            reply_markup=reply_markup
-        )
+    await update.message.reply_text(
+        "Нажмите кнопку ниже, чтобы открыть полнофункциональное VPN-приложение:",
+        reply_markup=reply_markup
+    )
 
 
 async def reset_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -406,78 +375,40 @@ async def renew_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показать главное меню с проверкой подписки"""
+    """Показать главное меню"""
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
     user_id = update.effective_user.id
     user = update.effective_user
     username = user.username or user.first_name or "Пользователь"
 
-    # Проверяем подписку (если не админ)
-    is_admin_user = is_user_admin(user_id)
-    is_subscribed = True if is_admin_user else await check_subscription(user_id)
-
-    if is_subscribed:
-        # Пользователь подписан — показываем доступ к Mini App
-        keyboard = [
-            [
-                InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
-            ],
-            [
-                InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
-            ],
-            [
-                InlineKeyboardButton("📰 Новости VPVKS", url=CHANNEL_NEWS_URL),
-            ]
+    # Показываем меню с Mini App
+    keyboard = [
+        [
+            InlineKeyboardButton("🚀 Открыть VPN приложение", web_app=WebAppInfo(url=MINI_APP_URL)),
+        ],
+        [
+            InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
+        ],
+        [
+            InlineKeyboardButton("📰 Новости VPVKS", url="https://t.me/vpvks_news"),
         ]
+    ]
 
-        welcome_message = (
-            f"👋 Привет, @{username}!\n\n"
-            f"🆔 ID: <code>{user_id}</code>\n\n"
-            "✅ Вы подписаны на канал новостей\n\n"
-            "Нажми кнопку ниже чтобы открыть приложение 👇"
-        )
+    welcome_message = (
+        f"👋 Привет, @{username}!\n\n"
+        f"🆔 ID: <code>{user_id}</code>\n\n"
+        "Нажми кнопку ниже чтобы открыть приложение 👇"
+    )
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=welcome_message,
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
-    else:
-        # Пользователь не подписан — просим подписаться
-        keyboard = [
-            [
-                InlineKeyboardButton("📢 Подписаться на канал", url=f"https://t.me/{CHANNEL_NEWS_ID}"),
-            ],
-            [
-                InlineKeyboardButton("✅ Я подписался", callback_data="check_subscription"),
-            ],
-            [
-                InlineKeyboardButton("📚 Инструкции", callback_data="instructions"),
-            ]
-        ]
-
-        message = (
-            f"👋 Привет, @{username}!\n\n"
-            f"🆔 ID: <code>{user_id}</code>\n\n"
-            "⚠️ Для доступа к VPN приложению необходимо подписаться на канал новостей!\n\n"
-            "1️⃣ Нажмите кнопку «📢 Подписаться на канал»\n"
-            "2️⃣ Подпишитесь на канал\n"
-            "3️⃣ Вернитесь в бот и нажмите «✅ Я подписался»\n\n"
-            "После этого вы получите доступ к VPN!"
-        )
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=message,
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=welcome_message,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
 
 
 async def show_instructions_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -647,10 +578,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     await query.answer()
 
     callback_data = query.data
-    user_id = update.effective_user.id
-
-    # Import here to avoid scope issues
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
     # Обработка кнопки "Назад"
     if callback_data == "back":
@@ -661,17 +588,6 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     # Обработка кнопки "Инструкции"
     if callback_data == "instructions":
         await show_instructions_menu(update, context)
-        return
-
-    # Обработка кнопки "Я подписался"
-    if callback_data == "check_subscription":
-        await check_subscription_callback(update, context)
-        return
-
-    # Обработка инструкции по VPN (старая кнопка, для совместимости)
-    if callback_data == "vpn_instruction":
-        from handlers.vpn_key_handler import show_vpn_instruction
-        await show_vpn_instruction(update, context)
         return
 
     # По умолчанию
