@@ -590,13 +590,13 @@ async def check_subscription_callback(update: Update, context: ContextTypes.DEFA
             # Бот не админ — показываем инструкцию
             try:
                 await query.edit_message_text(
-                    text="⚠️ **ВНИМАНИЕ! Проблема с проверкой подписки**\n\n"
+                    text="⚠️ *ВНИМАНИЕ! Проблема с проверкой подписки*\n\n"
                          "Бот не является администратором канала @vpvks_news.\n\n"
-                         "**Что делать:**\n"
+                         "*Что делать:*\n"
                          "1. Откройте @vpvks_news\n"
                          "2. Управление → Администраторы\n"
                          "3. Добавьте бота как администратора\n"
-                         "4. Дайте право 'Просмотр сообщений'\n\n"
+                         "4. Дайте право «Просмотр сообщений»\n\n"
                          "Или напишите в поддержку @vpvks_support",
                     reply_markup=InlineKeyboardMarkup([
                         [
