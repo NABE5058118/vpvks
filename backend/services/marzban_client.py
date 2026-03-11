@@ -56,6 +56,10 @@ class MarzbanClient:
                 "username": username,
                 "proxies": protocols,
                 "data_limit": data_limit,
+                "inbounds": {
+                    "vless": ["VLESS Reality"],
+                    "trojan": ["Trojan TLS"]
+                }
             }
 
             if inbounds:

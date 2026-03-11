@@ -401,8 +401,7 @@ class BusinessLogicService:
                         "expire": expire_timestamp,
                         "inbounds": {
                             "vless": ["VLESS Reality"],
-                            "trojan": ["Trojan TLS"],
-                            "hysteria2": ["Hysteria 2"]
+                            "trojan": ["Trojan TLS"]
                         }
                     }
 

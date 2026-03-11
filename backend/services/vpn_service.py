@@ -92,29 +92,6 @@ class VPNService:
     # Marzban (V2Ray/Trojan/Reality) методы
     # =========================================================
 
-    def _enable_marzban_inbounds(self):
-        """Автоматическое включение VLESS Reality и Trojan TLS через БД"""
-        try:
-            import subprocess
-
-            # Запускаем скрипт включения inbound
-            result = subprocess.run(
-                ['python3', '/app/enable_marzban_inbounds.py'],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-
-            if result.returncode == 0:
-                logger.info("✅ Marzban inbounds check completed")
-                if result.stdout:
-                    logger.info(result.stdout.strip())
-            else:
-                logger.warning(f"Inbound check failed: {result.stderr}")
-
-        except Exception as e:
-            logger.error(f"Error enabling Marzban inbounds: {e}")
-
     def create_marzban_user(self, user_id: int, tariff: str = "standard"):
         """Создание пользователя в Marzban (V2Ray/Trojan) - БЕСПЛАТНО И БЕСКОНЕЧНО"""
         try:
@@ -161,14 +138,11 @@ class VPNService:
 
             logger.info(f"Data limit for user {user_id}: {'Безлимитный' if data_limit_bytes == 0 else f'{data_limit_bytes} bytes'}")
 
-            # Включаем inbound автоматически перед созданием пользователя
-            self._enable_marzban_inbounds()
 
             # 🔴 Добавляем inbounds для пользователя
             inbounds = {
                 "vless": ["VLESS Reality"],
-                "trojan": ["Trojan TLS"],
-                "hysteria2": ["Hysteria 2"]
+                "trojan": ["Trojan TLS"]
             }
 
             # Проверка, существует ли уже пользователь
