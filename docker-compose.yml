@@ -111,8 +111,8 @@ services:
       - vpn_network
     volumes:
       - ./backend:/app
-    mem_limit: 128m
-    mem_reservation: 64m
+    mem_limit: 256m
+    mem_reservation: 128m
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 30s
@@ -140,8 +140,8 @@ services:
       - vpn_network
     volumes:
       - ./bot:/app
-    mem_limit: 64m
-    mem_reservation: 32m
+    mem_limit: 96m
+    mem_reservation: 48m
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe')"]
       interval: 60s
