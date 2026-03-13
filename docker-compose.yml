@@ -21,6 +21,8 @@ services:
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
+    mem_limit: 256m
+    mem_reservation: 128m
 
   postgres:
     image: postgres:17-alpine
@@ -103,6 +105,8 @@ services:
       - vpn_network
     volumes:
       - ./backend:/app
+    mem_limit: 128m
+    mem_reservation: 64m
 
   bot:
     build:
@@ -124,6 +128,8 @@ services:
       - vpn_network
     volumes:
       - ./bot:/app
+    mem_limit: 64m
+    mem_reservation: 32m
 
 networks:
   vpn_network:
