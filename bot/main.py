@@ -660,14 +660,14 @@ def main():
         )
         logger.info("✅ JobQueue настроен: уведомления об истечении в 10:00")
         
-        # Синхронизация Marzban → PostgreSQL каждые 5 минут
+        # Синхронизация Marzban → PostgreSQL каждые 15 минут
         application.job_queue.run_repeating(
             sync_marzban_with_db,
-            interval=300,  # 300 секунд = 5 минут
-            first=60,      # Первый запуск через 60 секунд после старта
+            interval=900,  # 900 секунд = 15 минут
+            first=15,      # Первый запуск через 60 секунд после старта
             name="marzban_sync"
         )
-        logger.info("✅ JobQueue настроен: синхронизация Marzban каждые 5 минут")
+        logger.info("✅ JobQueue настроен: синхронизация Marzban каждые 15 минут")
 
         # Start the bot
         logger.info("Starting VPN Bot polling...")

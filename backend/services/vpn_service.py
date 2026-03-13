@@ -298,28 +298,28 @@ class VPNService:
             existing = self.marzban.get_user(username)
             if existing.get('status') == 'success':
                 logger.info(f"User {username} already exists, updating...")
-                
+
                 # 🔴 ИСПРАВЛЕНИЕ: передаём expire как timestamp, а не expire_days
                 # Marzban API принимает expire как Unix timestamp
                 modify_data = {}
-                
+
                 if payload.get('data_limit') is not None:
                     modify_data['data_limit'] = payload.get('data_limit')
                     logger.info(f"Setting data_limit: {payload.get('data_limit')}")
-                
+
                 if payload.get('expire') and payload.get('expire') > 0:
                     # Передаем expire как timestamp (Marzban API)
                     modify_data['expire'] = payload.get('expire')
                     logger.info(f"Setting expire timestamp: {payload.get('expire')}")
-                
+
                 if payload.get('inbounds'):
                     modify_data['inbounds'] = payload.get('inbounds')
                     logger.info(f"Setting inbounds: {payload.get('inbounds')}")
-                
+
                 if payload.get('proxies'):
                     modify_data['proxies'] = payload.get('proxies')
                     logger.info(f"Setting proxies: {payload.get('proxies')}")
-                
+
                 result = self.marzban.modify_user(username, modify_data)
                 logger.info(f"Marzban modify_user result: {result}")
                 return result
@@ -329,23 +329,23 @@ class VPNService:
                 "username": username,
                 "data_limit": payload.get('data_limit', 10 * 1024**3),
             }
-            
+
             if payload.get('expire'):
                 create_payload['expire'] = payload.get('expire')
-            
+
             if payload.get('inbounds'):
                 create_payload['inbounds'] = payload.get('inbounds')
-            
+
             if payload.get('proxies'):
                 create_payload['proxies'] = payload.get('proxies')
-            
+
             result = self.marzban.create_user(
                 username=username,
                 data_limit=create_payload.get('data_limit', 10 * 1024**3),
                 expire_days=0,  # Не используем expire_days, передаём expire напрямую
                 inbounds=create_payload.get('inbounds')
             )
-            
+
             # Если create_user не поддержит expire, нужно использовать modify_user
             if result.get('status') == 'success' and payload.get('expire'):
                 # Дополнительно обновляем expire через modify_user
@@ -355,4 +355,84 @@ class VPNService:
             return result
         except Exception as e:
             logger.error(f"Error creating Marzban user with payload: {e}")
+            return {"status": "error", "message": str(e)}
+
+    def sync_all_users_with_marzban(self):
+        """
+        Синхронизация всех пользователей с активной подпиской в Marzban
+        """
+        try:
+            from database.models.user_model import User as UserModel
+            from sqlalchemy import and_
+            import time
+
+            # Получаем всех пользователей с активной подпиской
+            active_users = UserModel.query.filter(
+                and_(
+                    UserModel.subscription_end_date > datetime.utcnow(),
+                    UserModel.deleted_at.is_(None)
+                )
+            ).all()
+
+            logger.info(f"Found {len(active_users)} users with active subscriptions")
+
+            synced_count = 0
+            errors_count = 0
+
+            for user in active_users:
+                try:
+                    user_id = user.id
+                    username = f"user_{user_id}"
+
+                    # Проверяем, существует ли в Marzban
+                    marzban_user = self.marzban.get_user(username)
+
+                    if marzban_user.get("status") == "success":
+                        # Пользователь существует, проверяем срок действия
+                        user_data = marzban_user.get("data", {})
+                        expire_timestamp = user_data.get("expire")
+
+                        if expire_timestamp and expire_timestamp > 0:
+                            marzban_expire_date = datetime.fromtimestamp(expire_timestamp)
+                            db_expire_date = user.subscription_end_date
+
+                            # Если в БД дата больше, чем в Marzban - обновляем
+                            if db_expire_date > marzban_expire_date:
+                                logger.info(f"Extending user {username} in Marzban from {marzban_expire_date} to {db_expire_date}")
+                                new_expire = int(db_expire_date.timestamp())
+                                result = self.marzban.modify_user(username, {"expire": new_expire})
+                                if result.get("status") == "success":
+                                    synced_count += 1
+                                else:
+                                    errors_count += 1
+                                    logger.warning(f"Failed to extend user {username}: {result.get('message')}")
+                            else:
+                                synced_count += 1
+                        else:
+                            synced_count += 1
+                    else:
+                        # Пользователя нет в Marzban - создаём
+                        logger.info(f"Creating user {username} in Marzban")
+                        result = self.create_marzban_user(user_id, "standard")
+                        if result.get("status") == "success":
+                            synced_count += 1
+                        else:
+                            errors_count += 1
+                            logger.warning(f"Failed to create user {username}: {result.get('message')}")
+
+                except Exception as e:
+                    errors_count += 1
+                    logger.error(f"Error syncing user {user.id}: {e}")
+
+            logger.info(f"Sync completed: {synced_count} synced, {errors_count} errors")
+
+            return {
+                "status": "success",
+                "synced_count": synced_count,
+                "errors_count": errors_count,
+                "total_users": len(active_users)
+            }
+
+        except Exception as e:
+            logger.error(f"Error in sync_all_users_with_marzban: {e}")
             return {"status": "error", "message": str(e)}
