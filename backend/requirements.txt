@@ -17,3 +17,6 @@ Flask-Testing==0.8.1
 
 # Telegram notifications (optional)
 python-telegram-bot==20.7
+
+# Production WSGI server
+gunicorn==21.2.0
