@@ -245,23 +245,15 @@ async def send_broadcast_message(message_text: str, exclude_admins: bool = True)
 # Синхронные версии для вызова из синхронного кода
 def send_payment_success_notification_sync(user_id: int, amount: float, days: int):
     """Синхронная версия уведомления об оплате"""
-    import asyncio
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(send_payment_success_notification(user_id, amount, days))
-        loop.close()
+        asyncio.run(send_payment_success_notification(user_id, amount, days))
     except Exception as e:
         logger.error(f"Ошибка в sync wrapper payment notification: {e}")
 
 
 def send_welcome_notification_sync(user_id: int, username: str):
     """Синхронная версия приветственного уведомления"""
-    import asyncio
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(send_welcome_notification(user_id, username))
-        loop.close()
+        asyncio.run(send_welcome_notification(user_id, username))
     except Exception as e:
         logger.error(f"Ошибка в sync wrapper welcome notification: {e}")

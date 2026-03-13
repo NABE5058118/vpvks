@@ -28,6 +28,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@routes_bp.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Check database connection
+        db.session.execute(db.text('SELECT 1'))
+        db_status = 'connected'
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        db_status = 'disconnected'
+
+    return jsonify({
+        'status': 'ok',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': db_status,
+        'service': 'vpn_backend'
+    }), 200
+
+
 @routes_bp.route('/api/users/<int:user_id>', methods=['GET'])
 @limiter.limit("30 per minute")
 def get_user(user_id):

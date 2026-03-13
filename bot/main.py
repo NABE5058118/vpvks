@@ -13,6 +13,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ID канала для проверки подписки
+CHANNEL_NEWS_ID = 'vpvks_news'
+
+
+def is_user_admin(user_id: int) -> bool:
+    """Проверка, является ли пользователь админом"""
+    return user_id in ADMIN_IDS
+
+
+async def check_subscription(user_id: int) -> bool:
+    """
+    Проверка подписки пользователя на канал новостей
+    :param user_id: ID пользователя в Telegram
+    :return: True если подписан, False если нет
+    """
+    try:
+        from telegram import Bot
+        bot = Bot(token=BOT_TOKEN)
+        chat_member = await bot.get_chat_member(chat_id=CHANNEL_NEWS_ID, user_id=user_id)
+        
+        # Проверяем статус участника
+        if chat_member.status in ['member', 'administrator', 'creator']:
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Ошибка проверки подписки для user_{user_id}: {e}")
+        # В случае ошибки считаем что пользователь не подписан
+        return False
+
+
 # Импорты для асинхронной работы
 import aiohttp
 from utils.validation import validate_user_id, sanitize_input
@@ -648,6 +678,9 @@ def main():
         
         # Register callback query handler for menu
         application.add_handler(CallbackQueryHandler(handle_plan_selection))
+        
+        # Register callback query handler for subscription check
+        application.add_handler(CallbackQueryHandler(check_subscription_callback, pattern='^check_subscription$'))
 
         # Setup JobQueue for automatic notifications
         logger.info("Setting up JobQueue for automatic notifications...")

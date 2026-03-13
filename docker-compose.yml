@@ -107,6 +107,12 @@ services:
       - ./backend:/app
     mem_limit: 128m
     mem_reservation: 64m
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   bot:
     build:
@@ -130,6 +136,12 @@ services:
       - ./bot:/app
     mem_limit: 64m
     mem_reservation: 32m
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   vpn_network:
