@@ -21,14 +21,18 @@ async def send_expiration_reminder(context: ContextTypes.DEFAULT_TYPE):
     """
     Ежедневная проверка и отправка уведомлений об истечении подписки
     Запускается каждый день в 10:00
-    
+
     Уведомления отправляются за 3, 2, 1 дня и в день истечения
     """
     logger.info("🔔 Запуск проверки истекающих подписок...")
 
     try:
-        # Импортируем модель пользователя
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        # Импортируем модель пользователя через backend
+        import sys
+        import os
+        sys.path.append('/app/backend')
+        os.environ['DATABASE_URL'] = os.getenv('DATABASE_URL', 'postgresql://vpn_bot_user:vp62RofV5h@postgres:5432/vpn_bot_db')
+        
         from database.models.user_model import User as UserModel
         from database.db_config import db
 
