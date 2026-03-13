@@ -90,7 +90,6 @@ services:
       --threads 2 
       --timeout 120 
       --keep-alive 5
-      --memory-limit 256
       server:app
     extra_hosts:
       - "host.docker.internal:host-gateway"
