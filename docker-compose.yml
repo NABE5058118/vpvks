@@ -96,8 +96,6 @@ services:
       YOOKASSA_TEST_MODE: ${YOOKASSA_TEST_MODE}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
       SECRET_KEY: ${SECRET_KEY}
-    ports:
-      - "8080:8080"
     depends_on:
       pgbouncer:
         condition: service_started
