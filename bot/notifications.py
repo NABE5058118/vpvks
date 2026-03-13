@@ -3,6 +3,7 @@
 """
 
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from telegram import Bot
 from telegram.ext import ContextTypes
@@ -246,7 +247,15 @@ async def send_broadcast_message(message_text: str, exclude_admins: bool = True)
 def send_payment_success_notification_sync(user_id: int, amount: float, days: int):
     """Синхронная версия уведомления об оплате"""
     try:
-        asyncio.run(send_payment_success_notification(user_id, amount, days))
+        try:
+            loop = asyncio.get_running_loop()
+            # Loop запущен (бот) — создаём отдельный
+            new_loop = asyncio.new_event_loop()
+            new_loop.run_until_complete(send_payment_success_notification(user_id, amount, days))
+            new_loop.close()
+        except RuntimeError:
+            # Loop не запущен — можно использовать asyncio.run
+            asyncio.run(send_payment_success_notification(user_id, amount, days))
     except Exception as e:
         logger.error(f"Ошибка в sync wrapper payment notification: {e}")
 
@@ -254,6 +263,14 @@ def send_payment_success_notification_sync(user_id: int, amount: float, days: in
 def send_welcome_notification_sync(user_id: int, username: str):
     """Синхронная версия приветственного уведомления"""
     try:
-        asyncio.run(send_welcome_notification(user_id, username))
+        try:
+            loop = asyncio.get_running_loop()
+            # Loop запущен (бот) — создаём отдельный
+            new_loop = asyncio.new_event_loop()
+            new_loop.run_until_complete(send_welcome_notification(user_id, username))
+            new_loop.close()
+        except RuntimeError:
+            # Loop не запущен — можно использовать asyncio.run
+            asyncio.run(send_welcome_notification(user_id, username))
     except Exception as e:
         logger.error(f"Ошибка в sync wrapper welcome notification: {e}")
