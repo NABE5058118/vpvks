@@ -84,13 +84,15 @@ services:
       dockerfile: Dockerfile
     container_name: vpn_backend
     command: >
-      gunicorn 
-      --bind 0.0.0.0:8080 
-      --workers 2 
-      --threads 2 
-      --timeout 120 
+      gunicorn
+      --bind 0.0.0.0:8080
+      --workers 2
+      --threads 2
+      --timeout 120
       --keep-alive 5
       server:app
+    ports:
+      - "127.0.0.1:8080:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
