@@ -1,7 +1,3 @@
-# ===========================================
-# VPN Bot Project + Marzban
-# ===========================================
-
 services:
   marzban:
     build:
@@ -21,8 +17,15 @@ services:
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    mem_limit: 256m
-    mem_reservation: 128m
+    mem_limit: 512m
+    mem_reservation: 256m
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 32768
+      nproc:
+        soft: 512
+        hard: 1024
 
   postgres:
     image: postgres:17-alpine
@@ -53,6 +56,13 @@ services:
     shm_size: 256mb
     mem_limit: 256m
     mem_reservation: 128m
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 16384
+      nproc:
+        soft: 256
+        hard: 512
 
   pgbouncer:
     image: edoburu/pgbouncer:latest
@@ -77,6 +87,13 @@ services:
       - vpn_network
     mem_limit: 32m
     mem_reservation: 16m
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 16384
+      nproc:
+        soft: 256
+        hard: 512
 
   backend:
     build:
@@ -121,6 +138,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 16384
+      nproc:
+        soft: 256
+        hard: 512
 
   bot:
     build:
@@ -145,11 +169,18 @@ services:
     mem_limit: 96m
     mem_reservation: 48m
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe')"]
-      interval: 60s
-      timeout: 10s
+      test: ["CMD-SHELL", "pgrep -f 'python3 main.py' || exit 1"]
+      interval: 30s
+      timeout: 5s
       retries: 3
       start_period: 10s
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 16384
+      nproc:
+        soft: 256
+        hard: 512
 
 networks:
   vpn_network:

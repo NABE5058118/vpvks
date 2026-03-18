@@ -130,3 +130,5 @@ ecosystem.config.js
 *.bak
 *.backup
 *.old
+
+.qwen
