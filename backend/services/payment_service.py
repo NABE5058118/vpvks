@@ -242,7 +242,13 @@ class PaymentService:
             if not local_payment:
                 logger.warning(f"Local payment not found: {payment_id}")
                 return {'error': 'Payment not found'}
-            
+
+            # 🔴 ОБНОВЛЯЕМ статус на 'succeeded', если payment ещё не в финальном статусе
+            if local_payment.status not in ['succeeded', 'canceled', 'refunded']:
+                local_payment.update_status('succeeded')
+                db.session.commit()
+                logger.info(f"✅ Payment {payment_id} status updated to 'succeeded'")
+
             # Return local payment data with user_id
             return {
                 'id': local_payment.id,
