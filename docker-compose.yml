@@ -130,8 +130,6 @@ services:
         condition: service_started
     networks:
       - vpn_network
-    volumes:
-      - ./backend:/app
     mem_limit: 256m
     mem_reservation: 128m
     healthcheck:
