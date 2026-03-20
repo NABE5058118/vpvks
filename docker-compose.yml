@@ -88,7 +88,7 @@ services:
     mem_limit: 32m
     mem_reservation: 16m
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vpn_bot_user -d vpn_bot_db -p 5432"]
+      test: ["CMD-SHELL", "PGPASSWORD=vp62RofV5h pg_isready -h localhost -U vpn_bot_user -d vpn_bot_db -p 5432"]
       interval: 5s
       timeout: 3s
       retries: 5
