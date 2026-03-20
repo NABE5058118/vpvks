@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class MarzbanClient:
     def __init__(self):
-        self.base_url = os.getenv('MARZBAN_URL', 'https://host.docker.internal:8000')
+        # URL по умолчанию — контейнер Marzban в той же Docker-сети
+        self.base_url = os.getenv('MARZBAN_URL', 'http://marzban:8000')
         self.username = os.getenv('MARZBAN_ADMIN', 'admin')
         self.password = os.getenv('MARZBAN_PASSWORD')
         self.token = None
