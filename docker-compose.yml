@@ -87,6 +87,11 @@ services:
       - vpn_network
     mem_limit: 32m
     mem_reservation: 16m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vpn_bot_user -d vpn_bot_db -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     ulimits:
       nofile:
         soft: 8192
@@ -108,7 +113,6 @@ services:
       --timeout 120
       --keep-alive 5
       server:app
-    network_mode: host
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
@@ -128,13 +132,13 @@ services:
       MARZBAN_PASSWORD: ${MARZBAN_PASSWORD}
     depends_on:
       pgbouncer:
-        condition: service_started
+        condition: service_healthy
     networks:
       - vpn_network
     mem_limit: 256m
     mem_reservation: 128m
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -152,7 +156,7 @@ services:
       context: ./bot
       dockerfile: Dockerfile
     container_name: vpn_bot
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -162,11 +166,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       MINI_APP_URL: ${MINI_APP_URL}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - vpn_network
-    volumes:
-      - ./bot:/app
     mem_limit: 96m
     mem_reservation: 48m
     healthcheck:
