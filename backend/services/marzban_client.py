@@ -173,3 +173,31 @@ class MarzbanClient:
         except Exception as e:
             logger.error(f"Error getting user: {e}")
             return {"status": "error", "message": str(e)}
+
+    def extend_user(self, username: str, days: int) -> dict:
+        """Продление подписки пользователя в Marzban"""
+        token = self.get_token()
+        if not token:
+            return {"status": "error", "message": "Failed to get token"}
+
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            import time
+            expire_timestamp = int(time.time()) + (days * 86400)
+
+            payload = {
+                "expire": expire_timestamp
+            }
+
+            response = requests.put(
+                f"{self.base_url}/api/user/{username}",
+                headers=headers,
+                json=payload,
+                timeout=10,
+                verify=False
+            )
+            response.raise_for_status()
+            return {"status": "success", "data": response.json()}
+        except Exception as e:
+            logger.error(f"Error extending user: {e}")
+            return {"status": "error", "message": str(e)}

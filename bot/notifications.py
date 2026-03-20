@@ -255,6 +255,7 @@ def send_payment_success_notification_sync(user_id: int, amount: float, days: in
             loop = asyncio.get_running_loop()
             # Loop запущен (бот) — создаём отдельный
             new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
             new_loop.run_until_complete(send_payment_success_notification(user_id, amount, days))
             new_loop.close()
         except RuntimeError:
@@ -271,6 +272,7 @@ def send_welcome_notification_sync(user_id: int, username: str):
             loop = asyncio.get_running_loop()
             # Loop запущен (бот) — создаём отдельный
             new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
             new_loop.run_until_complete(send_welcome_notification(user_id, username))
             new_loop.close()
         except RuntimeError:
