@@ -11,6 +11,9 @@ from datetime import datetime
 # Добавляем путь к backend
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Импортируем Flask app для context
+from server import app
+
 from database.db_config import db
 from database.models.user_model import User as UserModel
 from database.models.payment_model import Payment as PaymentModel
@@ -136,7 +139,9 @@ def sync_paid_users():
 
 if __name__ == '__main__':
     try:
-        result = sync_paid_users()
+        # Запуск в Flask application context
+        with app.app_context():
+            result = sync_paid_users()
         sys.exit(0 if result['errors'] == 0 else 1)
     except Exception as e:
         print(f"\n❌ Критическая ошибка: {e}")
