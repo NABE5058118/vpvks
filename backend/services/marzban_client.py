@@ -29,11 +29,13 @@ class MarzbanClient:
             return self.token
 
         try:
+            # Отключаем редиректы, чтобы избежать перехода на HTTPS
             response = requests.post(
                 f"{self.base_url}/api/admin/token",
                 data={"username": self.username, "password": self.password},
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             self.token = response.json()["access_token"]
@@ -77,7 +79,8 @@ class MarzbanClient:
                 headers=headers,
                 json=payload,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             result = response.json()
@@ -102,7 +105,8 @@ class MarzbanClient:
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             user_data = response.json()
@@ -129,7 +133,8 @@ class MarzbanClient:
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             return {"status": "success", "message": f"User {username} removed"}
@@ -149,7 +154,8 @@ class MarzbanClient:
                 headers=headers,
                 json=data,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             return {"status": "success", "data": response.json()}
@@ -168,7 +174,8 @@ class MarzbanClient:
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             return {"status": "success", "data": response.json()}
@@ -196,7 +203,8 @@ class MarzbanClient:
                 headers=headers,
                 json=payload,
                 timeout=10,
-                verify=False
+                verify=False,
+                allow_redirects=False
             )
             response.raise_for_status()
             return {"status": "success", "data": response.json()}
