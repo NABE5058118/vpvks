@@ -615,6 +615,8 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     callback_data = query.data
 
+    logger.info(f"🔘 handle_plan_selection получил callback: {callback_data} от user_{update.effective_user.id}")
+
     # Обработка кнопки "Назад"
     if callback_data == "back":
         await show_main_menu(update, context)
@@ -632,6 +634,7 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def handle_instructions_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик специально для кнопки инструкций"""
+    logger.info(f"🔘 Получен callback: instructions от user_{update.effective_user.id}")
     await show_instructions_menu(update, context)
 
 

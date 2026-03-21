@@ -3,6 +3,10 @@ Configuration module for the VPN bot
 """
 import os
 from dotenv import load_dotenv
+import logging
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv('.env')
@@ -16,6 +20,10 @@ MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://example.com/miniapp')
 CHANNEL_NEWS_URL = os.getenv('CHANNEL_NEWS_URL', 'https://t.me/vpvks_news')  # Новости
 CHANNEL_WIN_MAC_URL = os.getenv('CHANNEL_WIN_MAC_URL', 'https://t.me/vpvkspc')  # Инструкции Windows/macOS
 CHANNEL_ANDROID_IOS_URL = os.getenv('CHANNEL_ANDROID_IOS_URL', 'https://t.me/VPVKSinstr')  # Инструкции Android/iOS
+
+# Логируем загруженные переменные
+logger.info(f"CONFIG: CHANNEL_WIN_MAC_URL = {CHANNEL_WIN_MAC_URL}")
+logger.info(f"CONFIG: CHANNEL_ANDROID_IOS_URL = {CHANNEL_ANDROID_IOS_URL}")
 
 # Admin user IDs (comma-separated list in environment variable)
 ADMIN_IDS_STR = os.getenv('ADMIN_USER_IDS', '')
