@@ -175,36 +175,6 @@ async def send_payment_success_notification(user_id: int, amount: float, days: i
     except Exception as e:
         logger.error(f"❌ Не удалось отправить уведомление об оплате: {e}")
 
-
-async def send_welcome_notification(user_id: int, username: str):
-    """Приветственное уведомление новому пользователю"""
-    try:
-        message = (
-            "👋 **Добро пожаловать в VPVKS!**\n\n"
-            f"Привет, {username or 'друг'}!\n\n"
-            "Для подключения к VPN:\n"
-            "1. Нажмите /app\n"
-            "2. Перейдите в раздел «Ключи»\n"
-            "3. Получите ваш персональный ключ\n"
-            "4. Подключитесь и пользуйтесь!\n\n"
-            "🚀 Протоколы: VLESS Reality + Trojan TLS\n"
-            "🌍 Сервер: Стокгольм, Швеция\n"
-            "♾️ Лимит: безлимитный трафик\n\n"
-            "Если есть вопросы — напишите в поддержку."
-        )
-
-        await notification_bot.send_message(
-            chat_id=user_id,
-            text=message,
-            parse_mode='Markdown'
-        )
-
-        logger.info(f"📤 Приветственное уведомление отправлено пользователю {user_id}")
-
-    except Exception as e:
-        logger.error(f"❌ Не удалось отправить приветствие: {e}")
-
-
 async def send_broadcast_message(message_text: str, exclude_admins: bool = True):
     """
     Рассылка сообщения всем пользователям
@@ -260,16 +230,3 @@ def send_payment_success_notification_sync(user_id: int, amount: float, days: in
     except Exception as e:
         logger.error(f"Ошибка в sync wrapper payment notification: {e}")
 
-
-def send_welcome_notification_sync(user_id: int, username: str):
-    """Синхронная версия приветственного уведомления"""
-    try:
-        try:
-            loop = asyncio.get_running_loop()
-            # Loop запущен — используем create_task для выполнения в том же loop
-            asyncio.create_task(send_welcome_notification(user_id, username))
-        except RuntimeError:
-            # Loop не запущен — используем asyncio.run
-            asyncio.run(send_welcome_notification(user_id, username))
-    except Exception as e:
-        logger.error(f"Ошибка в sync wrapper welcome notification: {e}")
