@@ -447,12 +447,18 @@ async def show_instructions_menu(update: Update, context: ContextTypes.DEFAULT_T
 
     user_id = update.effective_user.id
 
+    # Проверяем что переменные загружены
+    win_mac_url = CHANNEL_WIN_MAC_URL or 'https://t.me/vpvkspc'
+    android_ios_url = CHANNEL_ANDROID_IOS_URL or 'https://t.me/VPVKSinstr'
+
+    logger.info(f"📚 Показываю инструкции: win_mac={win_mac_url}, android_ios={android_ios_url}")
+
     keyboard = [
         [
-            InlineKeyboardButton("🖥️ Windows / macOS", url=CHANNEL_WIN_MAC_URL),
+            InlineKeyboardButton("🖥️ Windows / macOS", url=win_mac_url),
         ],
         [
-            InlineKeyboardButton("📱 Android / iOS", url=CHANNEL_ANDROID_IOS_URL),
+            InlineKeyboardButton("📱 Android / iOS", url=android_ios_url),
         ],
         [
             InlineKeyboardButton("🔙 Назад", callback_data="back"),
@@ -624,6 +630,11 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
     await query.edit_message_text(text="⚠️ Функция в разработке.")
 
 
+async def handle_instructions_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик специально для кнопки инструкций"""
+    await show_instructions_menu(update, context)
+
+
 async def sync_marzban_with_db(context):
     """
     Периодическая синхронизация Marzban → PostgreSQL
@@ -664,6 +675,11 @@ def main():
     if not BACKEND_URL:
         logger.warning("BACKEND_URL not set, using default")
 
+    # Логируем переменные каналов для отладки
+    logger.info(f"📺 CHANNEL_NEWS_URL: {CHANNEL_NEWS_URL}")
+    logger.info(f"🖥️ CHANNEL_WIN_MAC_URL: {CHANNEL_WIN_MAC_URL}")
+    logger.info(f"📱 CHANNEL_ANDROID_IOS_URL: {CHANNEL_ANDROID_IOS_URL}")
+
     try:
         logger.info("Creating application with bot token...")
         application = Application.builder().token(BOT_TOKEN).build()
@@ -676,11 +692,14 @@ def main():
         application.add_handler(CommandHandler("reset_device", reset_device))
         application.add_handler(CommandHandler("admin", admin_command))
         
-        # Register callback query handler for menu
-        application.add_handler(CallbackQueryHandler(handle_plan_selection))
-        
+        # Register callback query handler for instructions (сначала более специфичные)
+        application.add_handler(CallbackQueryHandler(handle_instructions_callback, pattern='^instructions$'))
+
         # Register callback query handler for subscription check
         application.add_handler(CallbackQueryHandler(check_subscription_callback, pattern='^check_subscription$'))
+
+        # Register callback query handler for menu (общий обработчик - в конце)
+        application.add_handler(CallbackQueryHandler(handle_plan_selection))
 
         # Setup JobQueue for automatic notifications
         logger.info("Setting up JobQueue for automatic notifications...")
