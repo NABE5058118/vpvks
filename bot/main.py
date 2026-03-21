@@ -200,9 +200,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                         status_text = (
                             "📊 Статус VPN-подключения:\n\n"
-                            f"Статус подписки: {'✅ Активна' if sub_status == 'active' else '❌ Просрочена' if sub_status == 'expired' else '🆓 Пробный период'}\n"
+                            f"Статус подписки: {'✅ Активна' if sub_status == 'active' else '❌ Просрочена'}\n"
                             f"Осталось дней: {days_left}\n"
-                            f"Триал использован: {'Да' if data['subscription']['trial_used'] else 'Нет'}\n"
                             f"VPN подключен: {'Да' if data['vpn']['connected'] else 'Нет'}"
                         )
                     else:

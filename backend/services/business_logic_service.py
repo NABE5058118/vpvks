@@ -25,12 +25,6 @@ class BusinessLogicService:
         try:
             user = User.create(user_data)
 
-            if not user_data.get('has_paid', False):
-                user.subscription_end_date = datetime.now() + timedelta(days=7)
-                user.trial_used = True
-                from database.db_config import db
-                db.session.commit()
-
             return {
                 'status': 'success',
                 'user': user.to_dict()
@@ -235,7 +229,6 @@ class BusinessLogicService:
                     'status': subscription_status,
                     'expires_at': user.subscription_end_date.isoformat() if user.subscription_end_date else None,
                     'days_left': days_left,
-                    'trial_used': user.trial_used,
                     'data_limit_gb': user.data_limit_gb,
                     'used_traffic_gb': user.used_traffic_gb
                 },

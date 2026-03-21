@@ -41,12 +41,6 @@ class User:
         return UserModel.query.filter_by(deleted_at=None).all()
 
     @staticmethod
-    def create_trial_user(user_data):
-        user_data['subscription_end_date'] = datetime.utcnow() + timedelta(days=7)
-        user_data['trial_used'] = True
-        return User.create(user_data)
-
-    @staticmethod
     def get_balance(user_id):
         user = User.get_by_id(user_id)
         return user.balance if user else 0

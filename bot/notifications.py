@@ -182,8 +182,7 @@ async def send_welcome_notification(user_id: int, username: str):
         message = (
             "👋 **Добро пожаловать в VPVKS!**\n\n"
             f"Привет, {username or 'друг'}!\n\n"
-            "🎁 Вам доступен **бесплатный пробный период 7 дней**!\n\n"
-            "Что для этого нужно:\n"
+            "Для подключения к VPN:\n"
             "1. Нажмите /app\n"
             "2. Перейдите в раздел «Ключи»\n"
             "3. Получите ваш персональный ключ\n"
@@ -193,15 +192,15 @@ async def send_welcome_notification(user_id: int, username: str):
             "♾️ Лимит: безлимитный трафик\n\n"
             "Если есть вопросы — напишите в поддержку."
         )
-        
+
         await notification_bot.send_message(
             chat_id=user_id,
             text=message,
             parse_mode='Markdown'
         )
-        
+
         logger.info(f"📤 Приветственное уведомление отправлено пользователю {user_id}")
-        
+
     except Exception as e:
         logger.error(f"❌ Не удалось отправить приветствие: {e}")
 

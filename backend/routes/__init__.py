@@ -368,7 +368,6 @@ def get_users():
                 'username': user.username,
                 'subscription_status': 'active' if user.is_subscription_active() else 'inactive',
                 'subscription_end_date': user.subscription_end_date.isoformat() if user.subscription_end_date else None,
-                'trial_used': user.trial_used,
                 'created_at': user.created_at.isoformat(),
                 'total_spent': round(total_spent, 2),
                 'payment_count': payment_count
@@ -455,7 +454,6 @@ def get_admin_users():
                 'username': user.username,
                 'subscription_status': 'active' if user.is_subscription_active() else 'inactive',
                 'subscription_end_date': user.subscription_end_date.isoformat() if user.subscription_end_date else None,
-                'trial_used': user.trial_used,
                 'created_at': user.created_at.isoformat(),
                 'total_spent': round(total_spent, 2),
                 'payment_count': payment_count,
@@ -486,9 +484,6 @@ def update_user_admin(user_id):
                 user.subscription_end_date = new_date
             except:
                 return jsonify({'error': 'Invalid date format'}), 400
-
-        if 'trial_used' in data:
-            user.trial_used = bool(data['trial_used'])
 
         if 'username' in data:
             user.username = data['username']

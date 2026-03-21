@@ -11,7 +11,6 @@ class User(db.Model):
     username = db.Column(db.String(100), nullable=True)
     subscription_end_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    trial_used = db.Column(db.Boolean, default=False)
     last_charge_date = db.Column(db.Date, nullable=True)
     balance = db.Column(db.Integer, default=0)
     is_tester = db.Column(db.Boolean, default=False)
@@ -32,7 +31,6 @@ class User(db.Model):
             'username': self.username,
             'subscription_end_date': self.subscription_end_date.isoformat() if self.subscription_end_date else None,
             'created_at': self.created_at.isoformat(),
-            'trial_used': self.trial_used,
             'last_charge_date': self.last_charge_date.isoformat() if self.last_charge_date else None,
             'balance': self.balance,
             'is_tester': self.is_tester,
