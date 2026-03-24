@@ -644,24 +644,27 @@ async def sync_marzban_with_db(context):
     """
     try:
         import aiohttp
-        
-        backend_url = "http://vpn_backend:8080"
-        
+        from config import BACKEND_URL
+
+        logger.info(f"🔄 Синхронизация Marzban: BACKEND_URL={BACKEND_URL}")
+
         async with aiohttp.ClientSession() as session:
             # Вызвать backend API для синхронизации
-            async with session.post(f"{backend_url}/api/sync/marzban") as response:
+            async with session.post(f"{BACKEND_URL}/api/sync/marzban") as response:
+                response_text = await response.text()
+                logger.info(f"📡 Ответ backend: status={response.status}, body={response_text[:200]}")
                 if response.status == 200:
                     result = await response.json()
                     updated = result.get('updated', 0)
                     if updated > 0:
                         logger.info(f"✅ Синхронизация: обновлено {updated} пользователей")
                     else:
-                        logger.debug("ℹ️ Синхронизация: изменений нет")
+                        logger.info("ℹ️ Синхронизация: изменений нет")
                 else:
                     logger.error(f"❌ Ошибка синхронизации: {response.status}")
-        
+
     except Exception as e:
-        logger.debug(f"ℹ️ Синхронизация: {e}")
+        logger.error(f"❌ Ошибка синхронизации: {e}", exc_info=True)
 
 
 def main():
