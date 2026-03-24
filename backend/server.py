@@ -2,6 +2,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
 import secrets
@@ -9,6 +10,7 @@ import secrets
 load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
+app = ProxyFix(app, x_host=1)
 
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key:
