@@ -112,8 +112,6 @@ services:
       --threads 2
       --timeout 120
       --keep-alive 5
-      --forwarded-allow-ips '*'
-      --proxy-allow-from '*'
       server:app
     ports:
       - "127.0.0.1:8080:8080"
@@ -123,7 +121,6 @@ services:
     env_file:
       - .env
     environment:
-      SERVER_NAME: localhost
       PORT: ${PORT}
       DATABASE_URL: ${DATABASE_URL}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
@@ -166,12 +163,10 @@ services:
       - .env
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      BACKEND_URL: http://host.docker.internal:8080
+      BACKEND_URL: ${BACKEND_URL}
       ADMIN_USER_IDS: ${ADMIN_USER_IDS}
       DATABASE_URL: ${DATABASE_URL}
       MINI_APP_URL: ${MINI_APP_URL}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       backend:
         condition: service_healthy

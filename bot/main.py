@@ -649,8 +649,11 @@ async def sync_marzban_with_db(context):
         logger.info(f"🔄 Синхронизация Marzban: BACKEND_URL={BACKEND_URL}")
 
         async with aiohttp.ClientSession() as session:
-            # Вызвать backend API для синхронизации
-            async with session.post(f"{BACKEND_URL}/api/sync/marzban") as response:
+            # Вызвать backend API для синхронизации с заголовком Host
+            async with session.post(
+                f"{BACKEND_URL}/api/sync/marzban",
+                headers={"Host": "localhost"}
+            ) as response:
                 response_text = await response.text()
                 logger.info(f"📡 Ответ backend: status={response.status}, body={response_text[:200]}")
                 if response.status == 200:
