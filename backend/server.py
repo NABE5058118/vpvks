@@ -16,6 +16,10 @@ if not secret_key:
     secret_key = secrets.token_hex(32)
 app.config['SECRET_KEY'] = secret_key
 
+# Доверенные хосты для Flask (защита от подделки Host header)
+trusted_hosts = os.getenv('TRUSTED_HOSTS', 'localhost,127.0.0.1,vpn_backend:8080,backend:8080')
+app.config['TRUSTED_HOSTS'] = [h.strip() for h in trusted_hosts.split(',')]
+
 # CORS для Docker-сети
 allowed_origins = os.getenv('CORS_ORIGINS', 'http://backend:8080,http://bot:8080,http://localhost:8080')
 CORS(app, resources={r"/api/*": {"origins": [o.strip() for o in allowed_origins.split(',')]}})
