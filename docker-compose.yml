@@ -123,6 +123,7 @@ services:
     env_file:
       - .env
     environment:
+      SERVER_NAME: localhost
       PORT: ${PORT}
       DATABASE_URL: ${DATABASE_URL}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
