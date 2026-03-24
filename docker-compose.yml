@@ -112,6 +112,8 @@ services:
       --threads 2
       --timeout 120
       --keep-alive 5
+      --forwarded-allow-ips '*'
+      --proxy-allow-from '*'
       server:app
     ports:
       - "127.0.0.1:8080:8080"
