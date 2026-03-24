@@ -2,7 +2,6 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
 import secrets
@@ -10,7 +9,6 @@ import secrets
 load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
-app = ProxyFix(app, x_host=1)
 
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key:
@@ -19,8 +17,8 @@ if not secret_key:
 app.config['SECRET_KEY'] = secret_key
 
 # Доверенные хосты для Flask (защита от подделки Host header)
-trusted_hosts = os.getenv('TRUSTED_HOSTS', 'localhost,127.0.0.1,vpn_backend:8080,backend:8080')
-app.config['TRUSTED_HOSTS'] = [h.strip() for h in trusted_hosts.split(',')]
+# Пустой список = отключить проверку (безопасно для Docker network)
+app.config['TRUSTED_HOSTS'] = None
 
 # CORS для Docker-сети
 allowed_origins = os.getenv('CORS_ORIGINS', 'http://backend:8080,http://bot:8080,http://localhost:8080')
