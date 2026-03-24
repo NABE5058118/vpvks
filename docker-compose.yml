@@ -166,10 +166,12 @@ services:
       - .env
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      BACKEND_URL: ${BACKEND_URL}
+      BACKEND_URL: http://host.docker.internal:8080
       ADMIN_USER_IDS: ${ADMIN_USER_IDS}
       DATABASE_URL: ${DATABASE_URL}
       MINI_APP_URL: ${MINI_APP_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       backend:
         condition: service_healthy
