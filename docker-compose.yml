@@ -17,14 +17,14 @@ services:
     volumes:
       - /var/lib/marzban:/var/lib/marzban
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    mem_limit: 512m
-    mem_reservation: 256m
     deploy:
       resources:
         limits:
           cpus: '2.0'
+          memory: 512M
         reservations:
-          cpus: '1'
+          cpus: '0.75'
+          memory: 256M
     ulimits:
       nofile:
         soft: 16384
@@ -60,14 +60,14 @@ services:
       -c work_mem=4MB
       -c maintenance_work_mem=64MB
     shm_size: 256mb
-    mem_limit: 256m
-    mem_reservation: 128m
     deploy:
       resources:
         limits:
           cpus: '0.5'
+          memory: 256M
         reservations:
           cpus: '0.25'
+          memory: 128M
     ulimits:
       nofile:
         soft: 8192
@@ -97,14 +97,14 @@ services:
         condition: service_healthy
     networks:
       - vpn_network
-    mem_limit: 32m
-    mem_reservation: 16m
     deploy:
       resources:
         limits:
-          cpus: '0.2'
+          cpus: '0.1'
+          memory: 32M
         reservations:
           cpus: '0.05'
+          memory: 16M
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=vp62RofV5h pg_isready -h localhost -U vpn_bot_user -d vpn_bot_db -p 5432"]
       interval: 5s
@@ -155,14 +155,14 @@ services:
         condition: service_healthy
     networks:
       - vpn_network
-    mem_limit: 256m
-    mem_reservation: 128m
     deploy:
       resources:
         limits:
           cpus: '0.3'
+          memory: 256M
         reservations:
-          cpus: '0.2'
+          cpus: '0.15'
+          memory: 128M
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
       interval: 30s
@@ -196,14 +196,14 @@ services:
         condition: service_healthy
     networks:
       - vpn_network
-    mem_limit: 96m
-    mem_reservation: 48m
     deploy:
       resources:
         limits:
           cpus: '0.15'
+          memory: 96M
         reservations:
           cpus: '0.1'
+          memory: 48M
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'python3 main.py' || exit 1"]
       interval: 30s
