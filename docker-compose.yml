@@ -20,11 +20,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 512M
+          cpus: '1.0'
+          memory: 384M
         reservations:
-          cpus: '0.75'
-          memory: 256M
+          cpus: '0.5'
+          memory: 192M
     ulimits:
       nofile:
         soft: 16384
@@ -63,11 +63,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '0.4'
+          memory: 192M
         reservations:
-          cpus: '0.25'
-          memory: 128M
+          cpus: '0.2'
+          memory: 96M
     ulimits:
       nofile:
         soft: 8192
@@ -100,11 +100,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.1'
-          memory: 32M
-        reservations:
           cpus: '0.05'
-          memory: 16M
+          memory: 24M
+        reservations:
+          cpus: '0.02'
+          memory: 12M
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=vp62RofV5h pg_isready -h localhost -U vpn_bot_user -d vpn_bot_db -p 5432"]
       interval: 5s
@@ -159,10 +159,10 @@ services:
       resources:
         limits:
           cpus: '0.3'
-          memory: 256M
+          memory: 192M
         reservations:
           cpus: '0.15'
-          memory: 128M
+          memory: 96M
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
       interval: 30s
@@ -199,11 +199,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: 96M
-        reservations:
           cpus: '0.1'
-          memory: 48M
+          memory: 64M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'python3 main.py' || exit 1"]
       interval: 30s
