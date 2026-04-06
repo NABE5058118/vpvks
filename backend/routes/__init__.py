@@ -312,10 +312,11 @@ def payment_webhook():
             result = business_service.handle_successful_payment(payment_id)
             if result.get('status') == 'success':
                 user_id = result.get('user_id')
+                days_added = result.get('days_added', 30)
                 if user_id:
                     try:
-                        from notifications import send_payment_activated_notification
-                        send_payment_activated_notification(user_id)
+                        from notifications import send_subscription_activated_notification_sync
+                        send_subscription_activated_notification_sync(user_id, days_added)
                     except Exception as e:
                         print(f"Error sending notification to user {user_id}: {e}")
                         logger.error(f"Error sending notification to user {user_id}: {e}")
