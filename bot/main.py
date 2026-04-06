@@ -627,6 +627,8 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def handle_instructions_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик специально для кнопки инструкций"""
+    query = update.callback_query
+    await query.answer()
     logger.info(f"🔘 Получен callback: instructions от user_{update.effective_user.id}")
     await show_instructions_menu(update, context)
 
