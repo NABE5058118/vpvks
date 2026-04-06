@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import ssl
 from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -53,26 +54,40 @@ from handlers.vpn_key_handler import get_vpn_key, renew_vpn_key, handle_renew_se
 # Импорты уведомлений
 from notifications import send_expiration_reminder
 
+# SSL context with certificate verification (MITM protection)
+_ssl_context = None
+
+
+def _get_ssl_context():
+    global _ssl_context
+    if _ssl_context is None:
+        _ssl_context = ssl.create_default_context()
+    return _ssl_context
+
+
+def _create_session(timeout=30):
+    return aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=timeout, connect=10),
+        connector=aiohttp.TCPConnector(ssl=_get_ssl_context())
+    )
+
 
 async def handle_payment_success(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка возврата после успешной оплаты"""
     user_id = update.effective_user.id
-    
+
     # Получаем баланс пользователя
     balance = 0
     subscription_status = 'unknown'
-    
+
     try:
-        timeout = aiohttp.ClientTimeout(total=10, connect=5)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(10) as session:
             # Получаем баланс
             async with session.get(f"{BACKEND_URL}/api/users/{user_id}/balance") as response:
                 if response.status == 200:
                     data = await response.json()
                     balance = data.get('balance', 0)
-            
+
             # Получаем статус подписки
             async with session.get(f"{BACKEND_URL}/api/vpn/status/{user_id}") as response:
                 if response.status == 200:
@@ -138,10 +153,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(30) as session:
             async with session.post(f"{BACKEND_URL}/api/users", json=user_data) as response:
                 if response.status != 201:
                     logger.warning(f"Failed to register user {user_id}: {await response.text()}")
@@ -180,10 +192,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(30) as session:
             async with session.get(f"{BACKEND_URL}/api/vpn/status/{user_id}") as response:
                 if response.status == 200:
                     data = await response.json()
@@ -221,10 +230,7 @@ async def connect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(30) as session:
             async with session.post(f"{BACKEND_URL}/api/vpn/connect", json={'user_id': user_id}) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -260,10 +266,7 @@ async def disconnect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(30) as session:
             async with session.post(f"{BACKEND_URL}/api/vpn/disconnect", json={'user_id': user_id}) as response:
                 if response.status == 200:
                     disconnect_text = (
@@ -286,10 +289,7 @@ async def payments(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     try:
-        timeout = aiohttp.ClientTimeout(total=30, connect=10)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(30) as session:
             async with session.get(f"{BACKEND_URL}/api/payment/plans") as response:
                 if response.status == 200:
                     plans = await response.json()
@@ -345,10 +345,7 @@ async def reset_device(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     try:
-        timeout = aiohttp.ClientTimeout(total=10, connect=5)
-        connector = aiohttp.TCPConnector(ssl=False)
-        
-        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+        async with _create_session(10) as session:
             async with session.post(f"{BACKEND_URL}/api/users/{user_id}/reset-device") as response:
                 if response.status == 200:
                     await update.message.reply_text(

@@ -4,11 +4,21 @@ import requests
 import time
 import os
 import logging
-import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import pybreaker
 
 logger = logging.getLogger(__name__)
+
+
+# Circuit Breaker для Marzban API
+# Открывается после 5 ошибок за 60 секунд, закрывается через 60 секунд
+marzban_circuit_breaker = pybreaker.CircuitBreaker(
+    fail_max=5,
+    reset_timeout=60,
+    exclude=[requests.exceptions.HTTPError],
+    name='marzban_api',
+)
 
 
 class MarzbanClient:
@@ -24,17 +34,30 @@ class MarzbanClient:
         if not self.password:
             logger.warning("MARZBAN_PASSWORD not set. Marzban integration will not work.")
 
+        # Настраиваем сессию с retry logic
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,  # 1s, 2s, 4s delay between retries
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    @marzban_circuit_breaker
     def get_token(self):
         if self.token and time.time() < self.token_expiry:
             return self.token
 
         try:
             # Отключаем редиректы, чтобы избежать перехода на HTTPS
-            response = requests.post(
+            response = self.session.post(
                 f"{self.base_url}/api/admin/token",
                 data={"username": self.username, "password": self.password},
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -74,12 +97,12 @@ class MarzbanClient:
                 expire_timestamp = int(time.time()) + (expire_days * 86400)
                 payload["expire"] = expire_timestamp
 
-            response = requests.post(
+            response = self.session.post(
                 f"{self.base_url}/api/user",
                 headers=headers,
                 json=payload,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -101,11 +124,11 @@ class MarzbanClient:
 
         try:
             headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(
+            response = self.session.get(
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -129,11 +152,11 @@ class MarzbanClient:
 
         try:
             headers = {"Authorization": f"Bearer {token}"}
-            response = requests.delete(
+            response = self.session.delete(
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -149,12 +172,12 @@ class MarzbanClient:
 
         try:
             headers = {"Authorization": f"Bearer {token}"}
-            response = requests.put(
+            response = self.session.put(
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 json=data,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -170,11 +193,11 @@ class MarzbanClient:
 
         try:
             headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(
+            response = self.session.get(
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()
@@ -198,12 +221,12 @@ class MarzbanClient:
                 "expire": expire_timestamp
             }
 
-            response = requests.put(
+            response = self.session.put(
                 f"{self.base_url}/api/user/{username}",
                 headers=headers,
                 json=payload,
                 timeout=10,
-                verify=False,
+                verify=True,  # SSL verification enabled
                 allow_redirects=False
             )
             response.raise_for_status()

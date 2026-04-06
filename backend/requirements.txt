@@ -20,3 +20,6 @@ python-telegram-bot==20.7
 
 # Production WSGI server
 gunicorn==21.2.0
+
+# Circuit breaker
+pybreaker==1.0.2
