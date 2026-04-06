@@ -93,7 +93,10 @@ def mock_payment(payment_id):
 with app.app_context():
     db_uri = app.config['SQLALCHEMY_DATABASE_URI']
     print(f"Database URI: {db_uri}")
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception:
+        pass  # Tables may already exist (race condition with multiple workers)
     print("Database tables created successfully!")
 
 if __name__ == '__main__':
