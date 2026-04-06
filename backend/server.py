@@ -22,7 +22,9 @@ CORS(app, resources={r"/api/*": {"origins": [o.strip() for o in allowed_origins.
 
 # Rate Limiting
 from utils.limiter import limiter
+from utils.error_handler import register_error_handlers
 limiter.init_app(app)
+register_error_handlers(app)
 
 @app.after_request
 def add_security_headers(response):
@@ -91,13 +93,14 @@ def mock_payment(payment_id):
     return render_template('mock_payment.html', payment_id=payment_id)
 
 with app.app_context():
-    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
-    print(f"Database URI: {db_uri}")
-    try:
-        db.create_all()
-    except Exception:
-        pass  # Tables may already exist (race condition with multiple workers)
-    print("Database tables created successfully!")
+    if not app.config.get('TESTING'):
+        db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', 'N/A')
+        print(f"Database URI: {db_uri}")
+        try:
+            db.create_all()
+        except Exception:
+            pass  # Tables may already exist (race condition with multiple workers)
+        print("Database tables created successfully!")
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5002))

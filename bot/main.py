@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import signal
 import ssl
+import sys
 from datetime import datetime, time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -728,9 +730,29 @@ def main():
         )
         logger.info("✅ JobQueue настроен: синхронизация Marzban каждые 15 минут")
 
-        # Start the bot
+        # Start the bot with graceful shutdown
         logger.info("Starting VPN Bot polling...")
-        application.run_polling(drop_pending_updates=True)
+
+        # Register signal handler for graceful shutdown
+        def signal_handler(signum, frame):
+            logger.info(f"🛑 Received signal {signum}. Stopping bot gracefully...")
+            if application.running:
+                application.create_task(application.stop())
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+
+        try:
+            application.run_polling(drop_pending_updates=True)
+        except KeyboardInterrupt:
+            logger.info("🛑 Keyboard interrupt received. Stopping bot...")
+        finally:
+            if application.running:
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(application.shutdown())
+                loop.close()
+            logger.info("✅ Bot stopped gracefully")
     except Exception as e:
         logger.error(f"Failed to start bot: {e}")
         import traceback

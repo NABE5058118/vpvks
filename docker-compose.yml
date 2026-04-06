@@ -129,7 +129,7 @@ services:
           cpus: '0.02'
           memory: 12M
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=vp62RofV5h pg_isready -h localhost -U vpn_bot_user -d vpn_bot_db -p 5432"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -p 5432"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -147,7 +147,7 @@ services:
       dockerfile: Dockerfile
     container_name: vpn_backend
     command: >
-      sh -c "gunicorn --bind 0.0.0.0:8080 --workers 3 --threads 1 --timeout 60 --keep-alive 5 server:app & while true; do python scripts/cleanup_logs.py 30; sleep 86400; done"
+      sh -c "gunicorn --bind 0.0.0.0:8080 --workers 3 --threads 1 --timeout 60 --keep-alive 5 --graceful-timeout 30 server:app & while true; do python scripts/cleanup_logs.py 30; sleep 86400; done"
     ports:
       - "127.0.0.1:8080:8080"
     extra_hosts:

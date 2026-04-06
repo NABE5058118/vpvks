@@ -18,6 +18,14 @@ from database.models.user_model import User as UserModel
 from database.models.payment_model import Payment as PaymentModel
 from database.models.connection_log_model import ConnectionLog
 from utils.limiter import limiter
+from schemas import validate_json
+from schemas.user_schemas import (
+    CreateUserSchema, UpdateUserAdminSchema,
+    CheckFingerprintSchema, ConnectVpnSchema
+)
+from schemas.payment_schemas import (
+    CreatePaymentSchema, CreateTopupPaymentSchema, ManualPaymentSchema
+)
 
 routes_bp = Blueprint('routes', __name__)
 business_service = BusinessLogicService()
@@ -71,9 +79,10 @@ def get_user_balance(user_id):
 
 @routes_bp.route('/api/users', methods=['POST'])
 @limiter.limit("10 per minute")
+@validate_json(CreateUserSchema)
 def create_user():
     try:
-        data = request.get_json()
+        data = request.validated_data
         user = User.create(data)
         return jsonify(user.to_dict()), 201
     except Exception as e:
@@ -81,24 +90,20 @@ def create_user():
 
 
 @routes_bp.route('/api/vpn/connect', methods=['POST'])
+@validate_json(ConnectVpnSchema)
 def connect_vpn():
     try:
-        data = request.get_json()
-        if 'user_id' not in data:
-            return jsonify({'error': 'user_id is required'}), 400
-        result = business_service.initiate_vpn_connection(data.get('user_id'))
+        result = business_service.initiate_vpn_connection(request.validated_data['user_id'])
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @routes_bp.route('/api/vpn/disconnect', methods=['POST'])
+@validate_json(ConnectVpnSchema)
 def disconnect_vpn():
     try:
-        data = request.get_json()
-        if 'user_id' not in data:
-            return jsonify({'error': 'user_id is required'}), 400
-        result = business_service.vpn_service.disconnect(data.get('user_id'))
+        result = business_service.vpn_service.disconnect(request.validated_data['user_id'])
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -160,15 +165,12 @@ def get_vpn_key(user_id):
 
 @routes_bp.route('/api/vpn/check-fingerprint', methods=['POST'])
 @limiter.limit("30 per minute")
+@validate_json(CheckFingerprintSchema)
 def check_fingerprint():
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        ip = data.get('ip')
-        user_agent = data.get('user_agent')
-
-        if not user_id or not ip:
-            return jsonify({'error': 'user_id and ip are required'}), 400
+        user_id = request.validated_data['user_id']
+        ip = request.validated_data['ip']
+        user_agent = request.validated_data.get('user_agent')
 
         user = UserModel.query.filter_by(id=user_id).first()
         if not user:
@@ -244,14 +246,13 @@ def get_plans():
 
 @routes_bp.route('/api/payment/create', methods=['POST'])
 @limiter.limit("5 per minute")
+@validate_json(CreatePaymentSchema)
 def create_payment():
     try:
-        data = request.get_json()
-        if 'user_id' not in data:
-            return jsonify({'error': 'user_id is required'}), 400
-
-        plan_type = data.get('plan_type', 'month')
-        result = business_service.process_subscription_payment(data.get('user_id'), plan_type)
+        result = business_service.process_subscription_payment(
+            request.validated_data['user_id'],
+            request.validated_data.get('plan_type', 'month')
+        )
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -259,14 +260,11 @@ def create_payment():
 
 @routes_bp.route('/api/payment/topup', methods=['POST'])
 @limiter.limit("10 per minute")
+@validate_json(CreateTopupPaymentSchema)
 def create_topup_payment():
     try:
-        data = request.get_json()
-        if 'user_id' not in data:
-            return jsonify({'error': 'user_id is required'}), 400
-
-        amount = data.get('amount', 0)
-        stars_amount = data.get('stars_amount', 0)
+        amount = float(request.validated_data['amount'])
+        stars_amount = request.validated_data.get('stars_amount', 0)
 
         if amount <= 0 and stars_amount <= 0:
             return jsonify({'error': 'Amount or stars_amount must be greater than 0'}), 400
@@ -274,8 +272,8 @@ def create_topup_payment():
         payment_data = {
             'amount': amount,
             'currency': 'RUB',
-            'description': f"Balance top-up for user {data.get('user_id')}",
-            'user_id': data.get('user_id'),
+            'description': f"Balance top-up for user {request.validated_data['user_id']}",
+            'user_id': request.validated_data['user_id'],
             'return_url': 'https://delron.ru/payment-success',
             'stars_amount': stars_amount
         }
@@ -356,13 +354,39 @@ def get_stats():
 @routes_bp.route('/api/users', methods=['GET'])
 def get_users():
     try:
-        users = User.get_all_users()
-        users_list = []
+        from sqlalchemy import func as sql_func
 
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        per_page = min(per_page, 200)  # Max 200 per page
+
+        # Query users with pagination
+        users_query = UserModel.query.order_by(UserModel.id)
+        total_users = users_query.count()
+        users = users_query.offset((page - 1) * per_page).limit(per_page).all()
+
+        # Single query for all payment aggregates (fixes N+1)
+        user_ids = [u.id for u in users]
+        if user_ids:
+            payment_stats = db.session.query(
+                PaymentModel.user_id,
+                sql_func.count(PaymentModel.id).label('payment_count'),
+                sql_func.sum(PaymentModel.amount).label('total_spent')
+            ).filter(
+                PaymentModel.user_id.in_(user_ids),
+                PaymentModel.paid.is_(True)
+            ).group_by(PaymentModel.user_id).all()
+
+            # Build lookup dict
+            stats_lookup = {row.user_id: row for row in payment_stats}
+        else:
+            stats_lookup = {}
+
+        users_list = []
         for user in users:
-            user_payments = Payment.get_payments_by_user(user.id)
-            total_spent = sum(float(p.amount) for p in user_payments if p.paid)
-            payment_count = len(user_payments)
+            stats = stats_lookup.get(user.id)
+            payment_count = stats.payment_count if stats else 0
+            total_spent = float(stats.total_spent) if stats and stats.total_spent else 0
 
             user_info = {
                 'id': user.id,
@@ -375,7 +399,19 @@ def get_users():
             }
             users_list.append(user_info)
 
-        return jsonify({'users': users_list})
+        total_pages = (total_users + per_page - 1) // per_page if total_users > 0 else 0
+
+        return jsonify({
+            'users': users_list,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total_users,
+                'pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
+            }
+        })
     except Exception as e:
         print(f"Error getting users: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -384,37 +420,27 @@ def get_users():
 @routes_bp.route('/api/payments', methods=['GET'])
 def get_payments():
     try:
-        from models.payment import Payment
-
         user_id = request.args.get('user_id')
-        limit = request.args.get('limit', 10, type=int)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        per_page = min(per_page, 200)  # Max 200 per page
 
         if user_id:
-            user_payments = Payment.get_payments_by_user(int(user_id))
-            user_payments = sorted(user_payments, key=lambda p: p.created_at, reverse=True)[:limit]
-            payments_list = []
+            # Payments for specific user with pagination
+            query = PaymentModel.query.filter_by(user_id=int(user_id)).order_by(
+                PaymentModel.created_at.desc()
+            )
+            total = query.count()
+            payments = query.offset((page - 1) * per_page).limit(per_page).all()
+        else:
+            # All payments with pagination
+            query = PaymentModel.query.order_by(PaymentModel.created_at.desc())
+            total = query.count()
+            payments = query.offset((page - 1) * per_page).limit(per_page).all()
 
-            for payment in user_payments:
-                payment_info = {
-                    'id': payment.id,
-                    'amount': float(payment.amount),
-                    'currency': payment.currency,
-                    'description': payment.description,
-                    'user_id': payment.user_id,
-                    'status': payment.status,
-                    'paid': payment.paid,
-                    'created_at': payment.created_at.isoformat(),
-                    'stars_amount': payment.stars_amount
-                }
-                payments_list.append(payment_info)
-
-            return jsonify({'payments': payments_list})
-
-        all_payments = Payment.get_recent_payments(limit)
         payments_list = []
-
-        for payment in all_payments:
-            payment_info = {
+        for payment in payments:
+            payments_list.append({
                 'id': payment.id,
                 'amount': float(payment.amount),
                 'currency': payment.currency,
@@ -424,10 +450,21 @@ def get_payments():
                 'paid': payment.paid,
                 'created_at': payment.created_at.isoformat(),
                 'stars_amount': payment.stars_amount
-            }
-            payments_list.append(payment_info)
+            })
 
-        return jsonify({'payments': payments_list})
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
+
+        return jsonify({
+            'payments': payments_list,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
+            }
+        })
     except Exception as e:
         print(f"Error getting payments: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -469,24 +506,20 @@ def get_admin_users():
 
 
 @routes_bp.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+@validate_json(UpdateUserAdminSchema)
 def update_user_admin(user_id):
     try:
         from models.user import User
 
-        data = request.get_json()
+        data = request.validated_data
         user = User.get_by_id(user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        if 'subscription_end_date' in data:
-            import dateutil.parser
-            try:
-                new_date = dateutil.parser.parse(data['subscription_end_date'])
-                user.subscription_end_date = new_date
-            except:
-                return jsonify({'error': 'Invalid date format'}), 400
+        if data.get('subscription_end_date') is not None:
+            user.subscription_end_date = data['subscription_end_date']
 
-        if 'username' in data:
+        if data.get('username') is not None:
             user.username = data['username']
 
         db.session.commit()
@@ -527,23 +560,17 @@ def unblock_user_admin(user_id):
 
 
 @routes_bp.route('/api/admin/payments', methods=['POST'])
+@validate_json(ManualPaymentSchema)
 def create_manual_payment():
     try:
         from models.payment import Payment
 
-        data = request.get_json()
-        user_id = data.get('user_id')
-        amount = data.get('amount')
-        description = data.get('description')
-
-        if not user_id or not amount:
-            return jsonify({'error': 'user_id and amount are required'}), 400
-
+        data = request.validated_data
         payment = Payment.create({
-            'user_id': user_id,
-            'amount': amount,
-            'currency': 'RUB',
-            'description': description,
+            'user_id': data['user_id'],
+            'amount': float(data['amount']),
+            'currency': data.get('currency', 'RUB'),
+            'description': data.get('description'),
             'status': 'succeeded',
             'paid': True
         })
