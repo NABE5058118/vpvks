@@ -168,7 +168,7 @@ services:
       MARZBAN_URL: ${MARZBAN_URL:-http://host.docker.internal:8000}
       MARZBAN_PUBLIC_URL: ${MARZBAN_PUBLIC_URL:-https://delron.ru}
       MARZBAN_ADMIN: ${MARZBAN_ADMIN:-admin}
-      MARZBAN_PASSWORD: ${MARZBAN_PASSWORD:-}
+      MARZBAN_PASSWORD: ${MARZBAN_PASSWORD:-j8X0EcIllDwPK}
     depends_on:
       pgbouncer:
         condition: service_healthy
