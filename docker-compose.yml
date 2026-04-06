@@ -161,10 +161,10 @@ services:
       YOOKASSA_TEST_MODE: ${YOOKASSA_TEST_MODE}
       YOOKASSA_RETURN_URL: ${YOOKASSA_RETURN_URL}
       SECRET_KEY: ${SECRET_KEY}
-      MARZBAN_URL: ${MARZBAN_URL}
-      MARZBAN_PUBLIC_URL: ${MARZBAN_PUBLIC_URL}
-      MARZBAN_ADMIN: ${MARZBAN_ADMIN}
-      MARZBAN_PASSWORD: ${MARZBAN_PASSWORD}
+      MARZBAN_URL: ${MARZBAN_URL:-http://host.docker.internal:8000}
+      MARZBAN_PUBLIC_URL: ${MARZBAN_PUBLIC_URL:-https://delron.ru}
+      MARZBAN_ADMIN: ${MARZBAN_ADMIN:-admin}
+      MARZBAN_PASSWORD: ${MARZBAN_PASSWORD:-}
     depends_on:
       pgbouncer:
         condition: service_healthy

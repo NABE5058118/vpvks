@@ -608,7 +608,7 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     callback_data = query.data
 
-    logger.info(f"🔘 handle_plan_selection получил callback: {callback_data} от user_{update.effective_user.id}")
+    logger.info(f"🔘 handle_plan_selection получил callback: '{callback_data}' от user_{update.effective_user.id}")
 
     # Обработка кнопки "Назад"
     if callback_data == "back":
@@ -618,6 +618,7 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Обработка кнопки "Инструкции"
     if callback_data == "instructions":
+        logger.info(f"📚 handle_plan_selection -> show_instructions_menu")
         await show_instructions_menu(update, context)
         return
 
@@ -627,10 +628,15 @@ async def handle_plan_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def handle_instructions_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик специально для кнопки инструкций"""
-    query = update.callback_query
-    await query.answer()
-    logger.info(f"🔘 Получен callback: instructions от user_{update.effective_user.id}")
-    await show_instructions_menu(update, context)
+    try:
+        query = update.callback_query
+        logger.info(f"🔘 handle_instructions_callback STARTED для user_{update.effective_user.id}, callback_data='{query.data}'")
+        await query.answer()
+        logger.info(f"🔘 query.answer() done")
+        await show_instructions_menu(update, context)
+        logger.info(f"🔘 show_instructions_menu done")
+    except Exception as e:
+        logger.error(f"❌ handle_instructions_callback ERROR: {e}", exc_info=True)
 
 
 async def sync_marzban_with_db(context):
