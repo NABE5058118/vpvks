@@ -1,4 +1,25 @@
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: vpn_nginx
+    restart: always
+    network_mode: host
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - marzban
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+
   marzban:
     build:
       context: .
@@ -11,8 +32,8 @@ services:
       - UVICORN_HOST=0.0.0.0
       - SQLALCHEMY_DATABASE_URL=sqlite:////var/lib/marzban/db.sqlite3
       - XRAY_JSON=/var/lib/marzban/xray_config.json
-      - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/vpvks.ru/fullchain.pem
-      - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/vpvks.ru/privkey.pem
+      - UVICORN_SSL_CERTFILE=/etc/letsencrypt/live/delron.ru/fullchain.pem
+      - UVICORN_SSL_KEYFILE=/etc/letsencrypt/live/delron.ru/privkey.pem
     network_mode: host
     volumes:
       - /var/lib/marzban:/var/lib/marzban
@@ -124,13 +145,7 @@ services:
       dockerfile: Dockerfile
     container_name: vpn_backend
     command: >
-      gunicorn
-      --bind 0.0.0.0:8080
-      --workers 2
-      --threads 2
-      --timeout 120
-      --keep-alive 5
-      server:app
+      sh -c "gunicorn --bind 0.0.0.0:8080 --workers 3 --threads 1 --timeout 60 --keep-alive 5 server:app & while true; do python scripts/cleanup_logs.py 30; sleep 86400; done"
     ports:
       - "127.0.0.1:8080:8080"
     extra_hosts:
@@ -140,7 +155,7 @@ services:
       - .env
     environment:
       PORT: ${PORT}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${BACKEND_DATABASE_URL:-postgresql://vpn_bot_user:vp62RofV5h@pgbouncer:5432/vpn_bot_db}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
       YOOKASSA_TEST_MODE: ${YOOKASSA_TEST_MODE}
