@@ -88,7 +88,7 @@ class BusinessLogicService:
                 'currency': tariff['currency'],
                 'description': f"{tariff['name']} ({tariff['description']}, {tariff['data_limit_gb']}GB)",
                 'user_id': user_id,
-                'return_url': 'https://vpvks.ru/payment-success'
+                'return_url': 'https://delron.ru/payment-success'
             }
 
             payment_result = self.payment_service.create_payment(payment_data)

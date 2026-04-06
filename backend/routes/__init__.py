@@ -276,7 +276,7 @@ def create_topup_payment():
             'currency': 'RUB',
             'description': f"Balance top-up for user {data.get('user_id')}",
             'user_id': data.get('user_id'),
-            'return_url': 'https://vpvks.ru/payment-success',
+            'return_url': 'https://delron.ru/payment-success',
             'stars_amount': stars_amount
         }
 
